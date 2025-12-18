@@ -14,12 +14,16 @@ import {
   Toolbar,
   IconButton,
   Alert,
+  Divider,
+  Chip,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import StoreIcon from "@mui/icons-material/Store";
+import PersonIcon from "@mui/icons-material/Person";
+import EmailIcon from "@mui/icons-material/Email";
 import { useRouter } from "next/navigation";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 interface Product {
   id: number;
@@ -37,7 +41,9 @@ export default function CheckoutPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isGuest, setIsGuest] = useState(true);
   const [form, setForm] = useState({
+    email: "",
     first_name: "",
     last_name: "",
     phone: "",
@@ -77,19 +83,33 @@ export default function CheckoutPage() {
     setError(null);
 
     try {
+      // Prepare checkout data
+      const checkoutData: any = {
+        first_name: form.first_name,
+        last_name: form.last_name,
+        phone: form.phone || undefined,
+        billing_street: form.billing_street,
+        billing_zip: form.billing_zip,
+        billing_city: form.billing_city,
+        billing_country: form.billing_country,
+        items: cart.map((item) => ({
+          product_id: item.product.id,
+          quantity: item.quantity,
+        })),
+      };
+
+      // Only include email if user wants to create an account
+      if (!isGuest && form.email) {
+        checkoutData.email = form.email;
+      }
+
       // Use public checkout endpoint
       const checkoutRes = await fetch(`${API_BASE}/checkout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...form,
-          items: cart.map((item) => ({
-            product_id: item.product.id,
-            quantity: item.quantity,
-          })),
-        }),
+        body: JSON.stringify(checkoutData),
       });
 
       if (!checkoutRes.ok) {
@@ -104,7 +124,7 @@ export default function CheckoutPage() {
       setCart([]);
 
       // Redirect to success page
-      router.push(`/checkout/success?id=${invoice.id}`);
+      router.push(`/checkout/success?id=${invoice.id || invoice.data?.id}`);
     } catch (err: any) {
       setError(err.message || "Checkout failed");
     } finally {
@@ -140,6 +160,42 @@ export default function CheckoutPage() {
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Grid container spacing={3}>
           <Grid item xs={12} md={8}>
+            <Card sx={{ p: 3, mb: 2 }}>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                <PersonIcon sx={{ mr: 1, color: "primary.main" }} />
+                <Typography variant="h6" fontWeight={600}>
+                  Checkout Type
+                </Typography>
+              </Box>
+              <Box sx={{ display: "flex", gap: 2 }}>
+                <Chip
+                  label="Guest Checkout"
+                  icon={<PersonIcon />}
+                  onClick={() => setIsGuest(true)}
+                  color={isGuest ? "primary" : "default"}
+                  variant={isGuest ? "filled" : "outlined"}
+                  sx={{ flex: 1, py: 2.5, fontSize: "0.95rem" }}
+                />
+                <Chip
+                  label="Create Account"
+                  icon={<EmailIcon />}
+                  onClick={() => setIsGuest(false)}
+                  color={!isGuest ? "primary" : "default"}
+                  variant={!isGuest ? "filled" : "outlined"}
+                  sx={{ flex: 1, py: 2.5, fontSize: "0.95rem" }}
+                />
+              </Box>
+              {isGuest ? (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  Quick checkout without creating an account
+                </Alert>
+              ) : (
+                <Alert severity="success" sx={{ mt: 2 }}>
+                  Create an account to track your orders
+                </Alert>
+              )}
+            </Card>
+
             <Card sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom fontWeight={600}>
                 Billing Information
@@ -151,6 +207,26 @@ export default function CheckoutPage() {
               )}
               <form onSubmit={handleSubmit}>
                 <Grid container spacing={2}>
+                  {!isGuest && (
+                    <>
+                      <Grid item xs={12}>
+                        <TextField
+                          fullWidth
+                          label="Email Address"
+                          type="email"
+                          required
+                          value={form.email}
+                          onChange={(e) =>
+                            setForm((f) => ({ ...f, email: e.target.value }))
+                          }
+                          helperText="We'll create an account for you"
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <Divider />
+                      </Grid>
+                    </>
+                  )}
                   <Grid item xs={12} sm={6}>
                     <TextField
                       fullWidth
@@ -283,4 +359,3 @@ export default function CheckoutPage() {
     </Box>
   );
 }
-

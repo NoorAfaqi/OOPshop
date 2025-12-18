@@ -1,29 +1,30 @@
-const pool = require("./db");
+const pool = require("./config/database");
 
 async function runMigrations() {
   try {
+    // Single unified users table for ALL user types and customer billing info
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS managers (
+      CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
         email VARCHAR(255) NOT NULL UNIQUE,
-        password_hash VARCHAR(255) NOT NULL,
+        password_hash VARCHAR(255),
         first_name VARCHAR(100),
         last_name VARCHAR(100),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS customers (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        first_name VARCHAR(100) NOT NULL,
-        last_name VARCHAR(100) NOT NULL,
         phone VARCHAR(50),
+        role ENUM('admin', 'manager', 'customer', 'guest') NOT NULL DEFAULT 'customer',
+        is_active BOOLEAN DEFAULT TRUE,
+        
+        -- Customer/Billing Information (optional, filled during checkout)
         billing_street VARCHAR(255),
         billing_zip VARCHAR(20),
         billing_city VARCHAR(100),
         billing_country VARCHAR(100),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        
+        INDEX idx_email (email),
+        INDEX idx_role (role)
       )
     `);
 
@@ -45,12 +46,12 @@ async function runMigrations() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS invoices (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        customer_id INT NOT NULL,
+        user_id INT NOT NULL,
         total_amount DECIMAL(10,2) NOT NULL,
         status ENUM('pending','paid','cancelled') DEFAULT 'pending',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT fk_invoices_customer
-          FOREIGN KEY (customer_id) REFERENCES customers(id)
+        CONSTRAINT fk_invoices_user
+          FOREIGN KEY (user_id) REFERENCES users(id)
           ON DELETE RESTRICT
       )
     `);
@@ -75,7 +76,7 @@ async function runMigrations() {
       CREATE TABLE IF NOT EXISTS payments (
         id INT AUTO_INCREMENT PRIMARY KEY,
         invoice_id INT NOT NULL,
-        customer_id INT NOT NULL,
+        user_id INT NOT NULL,
         amount DECIMAL(10,2) NOT NULL,
         method ENUM('paypal','card','cash','other') DEFAULT 'paypal',
         status ENUM('pending','completed','failed') DEFAULT 'pending',
@@ -84,17 +85,16 @@ async function runMigrations() {
         CONSTRAINT fk_payments_invoice
           FOREIGN KEY (invoice_id) REFERENCES invoices(id)
           ON DELETE CASCADE,
-        CONSTRAINT fk_payments_customer
-          FOREIGN KEY (customer_id) REFERENCES customers(id)
+        CONSTRAINT fk_payments_user
+          FOREIGN KEY (user_id) REFERENCES users(id)
           ON DELETE RESTRICT
       )
     `);
 
-    // eslint-disable-next-line no-console
-    console.log("Migrations completed successfully.");
+    console.log("✅ Migrations completed successfully.");
+    console.log("📝 Single users table now handles all user types and customer billing info.");
   } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error("Migration error:", err);
+    console.error("❌ Migration error:", err);
     process.exitCode = 1;
   } finally {
     await pool.end();
@@ -102,5 +102,3 @@ async function runMigrations() {
 }
 
 runMigrations();
-
-

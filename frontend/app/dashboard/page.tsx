@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Box, Grid, Paper, Typography } from "@mui/material";
+import { STORAGE_KEYS } from "@/lib/config/api.config";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 interface SalesTrendPoint {
   date: string;
@@ -27,7 +28,7 @@ export default function DashboardOverviewPage() {
       try {
         const token =
           typeof window !== "undefined"
-            ? window.localStorage.getItem("token")
+            ? window.localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)
             : null;
         const res = await fetch(`${API_BASE}/reports`, {
           headers: {
@@ -159,5 +160,3 @@ export default function DashboardOverviewPage() {
     </Box>
   );
 }
-
-

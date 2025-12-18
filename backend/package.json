@@ -1,15 +1,19 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "OOPshop Backend API",
   "license": "ISC",
   "author": "Muhammad Noor Afaqi",
   "type": "commonjs",
   "main": "src/index.js",
   "scripts": {
     "dev": "node src/index.js",
+    "dev:minimal": "node src/server-minimal.js",
     "start": "node src/index.js",
     "migrate": "node src/migrate.js",
+    "migrate:users": "node scripts/migrate-managers-to-users.js",
+    "create-admin": "node scripts/create-admin.js",
+    "generate-password": "node scripts/generate-password.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
@@ -21,9 +25,16 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^4.22.1",
+    "express-rate-limit": "^7.4.1",
+    "express-validator": "^7.2.1",
+    "helmet": "^8.0.0",
+    "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",
     "mysql2": "^3.15.3",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "winston": "^3.18.0"
   }
 }

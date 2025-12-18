@@ -1,170 +1,103 @@
 const express = require("express");
-const pool = require("../db");
+const authService = require("../services/auth.service");
+const { successResponse } = require("../utils/response");
+const { asyncHandler } = require("../middleware/errorHandler");
+const authMiddleware = require("../middleware/auth");
 
 const router = express.Router();
 
-// Create customer
-router.post("/", async (req, res) => {
-  const {
-    first_name,
-    last_name,
-    phone,
-    billing_street,
-    billing_zip,
-    billing_city,
-    billing_country,
-  } = req.body || {};
-
-  try {
-    const [result] = await pool.query(
-      `INSERT INTO customers
-       (first_name, last_name, phone, billing_street, billing_zip, billing_city, billing_country)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        first_name,
-        last_name,
-        phone,
-        billing_street,
-        billing_zip,
-        billing_city,
-        billing_country,
-      ]
+/**
+ * Get all users (admin only)
+ */
+router.get(
+  "/",
+  authMiddleware.requireAdmin(),
+  asyncHandler(async (req, res) => {
+    const [users] = await require("../config/database").query(
+      "SELECT id, email, first_name, last_name, phone, role, is_active, created_at FROM users ORDER BY created_at DESC"
     );
+    successResponse(res, users, "Users fetched successfully");
+  })
+);
 
-    const [rows] = await pool.query("SELECT * FROM customers WHERE id = ?", [
-      result.insertId,
-    ]);
-    return res.status(201).json(rows[0]);
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error(err);
-    return res.status(500).json({ message: "Failed to create customer" });
-  }
-});
-
-// List customers
-router.get("/", async (_req, res) => {
-  try {
-    const [rows] = await pool.query(
-      "SELECT * FROM customers ORDER BY created_at DESC"
-    );
-    return res.json(rows);
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error(err);
-    return res.status(500).json({ message: "Failed to list customers" });
-  }
-});
-
-// Get single customer
-router.get("/:id", async (req, res) => {
-  try {
-    const [rows] = await pool.query("SELECT * FROM customers WHERE id = ?", [
-      req.params.id,
-    ]);
-    if (!rows[0]) {
-      return res.status(404).json({ message: "Customer not found" });
+/**
+ * Get user by ID
+ */
+router.get(
+  "/:id",
+  authMiddleware.requireAuth(),
+  asyncHandler(async (req, res) => {
+    // Users can only view their own profile unless they're admin
+    if (req.user.role !== 'admin' && req.user.id !== parseInt(req.params.id)) {
+      return res.status(403).json({ message: "Access denied" });
     }
-    return res.json(rows[0]);
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error(err);
-    return res.status(500).json({ message: "Failed to get customer" });
-  }
-});
+    const user = await authService.getUserById(req.params.id);
+    successResponse(res, user, "User fetched successfully");
+  })
+);
 
-// Update customer
-router.put("/:id", async (req, res) => {
-  const {
-    first_name,
-    last_name,
-    phone,
-    billing_street,
-    billing_zip,
-    billing_city,
-    billing_country,
-  } = req.body || {};
+/**
+ * Update user
+ */
+router.put(
+  "/:id",
+  authMiddleware.requireAuth(),
+  asyncHandler(async (req, res) => {
+    // Users can only update their own profile unless they're admin
+    if (req.user.role !== 'admin' && req.user.id !== parseInt(req.params.id)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+    const user = await authService.updateUser(req.params.id, req.body);
+    successResponse(res, user, "User updated successfully");
+  })
+);
 
-  try {
-    await pool.query(
-      `UPDATE customers SET
-        first_name = ?, last_name = ?, phone = ?, billing_street = ?, billing_zip = ?, billing_city = ?, billing_country = ?
-       WHERE id = ?`,
-      [
-        first_name,
-        last_name,
-        phone,
-        billing_street,
-        billing_zip,
-        billing_city,
-        billing_country,
-        req.params.id,
-      ]
-    );
-
-    const [rows] = await pool.query("SELECT * FROM customers WHERE id = ?", [
-      req.params.id,
-    ]);
-    return res.json(rows[0]);
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error(err);
-    return res.status(500).json({ message: "Failed to update customer" });
-  }
-});
-
-// Delete customer
-router.delete("/:id", async (req, res) => {
-  try {
-    await pool.query("DELETE FROM customers WHERE id = ?", [req.params.id]);
-    return res.status(204).end();
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error(err);
-    return res.status(500).json({ message: "Failed to delete customer" });
-  }
-});
-
-// Purchase history
-router.get("/:id/purchases", async (req, res) => {
-  try {
-    const [rows] = await pool.query(
+/**
+ * Get user's invoices
+ */
+router.get(
+  "/:id/invoices",
+  authMiddleware.requireAuth(),
+  asyncHandler(async (req, res) => {
+    // Users can only view their own invoices unless they're admin/manager
+    if (!['admin', 'manager'].includes(req.user.role) && req.user.id !== parseInt(req.params.id)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+    
+    const [invoices] = await require("../config/database").query(
       `SELECT i.*, GROUP_CONCAT(CONCAT(p.name, ' x', ii.quantity) SEPARATOR ', ') AS items
        FROM invoices i
        JOIN invoice_items ii ON ii.invoice_id = i.id
        JOIN products p ON p.id = ii.product_id
-       WHERE i.customer_id = ?
+       WHERE i.user_id = ?
        GROUP BY i.id
        ORDER BY i.created_at DESC`,
       [req.params.id]
     );
-    return res.json(rows);
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error(err);
-    return res
-      .status(500)
-      .json({ message: "Failed to fetch purchase history" });
-  }
-});
+    
+    successResponse(res, invoices, "Invoices fetched successfully");
+  })
+);
 
-// Payment history
-router.get("/:id/payments", async (req, res) => {
-  try {
-    const [rows] = await pool.query(
-      "SELECT * FROM payments WHERE customer_id = ? ORDER BY created_at DESC",
+/**
+ * Get user's payments
+ */
+router.get(
+  "/:id/payments",
+  authMiddleware.requireAuth(),
+  asyncHandler(async (req, res) => {
+    // Users can only view their own payments unless they're admin/manager
+    if (!['admin', 'manager'].includes(req.user.role) && req.user.id !== parseInt(req.params.id)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+    
+    const [payments] = await require("../config/database").query(
+      "SELECT * FROM payments WHERE user_id = ? ORDER BY created_at DESC",
       [req.params.id]
     );
-    return res.json(rows);
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error(err);
-    return res
-      .status(500)
-      .json({ message: "Failed to fetch payment history" });
-  }
-});
+    
+    successResponse(res, payments, "Payments fetched successfully");
+  })
+);
 
 module.exports = router;
-
-

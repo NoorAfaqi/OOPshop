@@ -138,14 +138,6 @@ export default function ProductDetailPage() {
           >
             OOP Shop
           </Typography>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => router.push("/login")}
-            sx={{ mr: 2, borderRadius: 999 }}
-          >
-            Manager Login
-          </Button>
           <IconButton onClick={() => router.push("/cart")}>
             <Badge badgeContent={cartCount} color="primary">
               <ShoppingCartIcon />
