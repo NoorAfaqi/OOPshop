@@ -168,7 +168,7 @@ export default function CartPage() {
           </Paper>
         ) : (
           <Grid container spacing={3}>
-            <Grid item xs={12} md={8}>
+            <Grid size={{ xs: 12, md: 8 }}>
               <Card>
                 <Table>
                   <TableHead>
@@ -232,7 +232,7 @@ export default function CartPage() {
                 </Table>
               </Card>
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Paper sx={{ p: 3 }}>
                 <Typography variant="h6" gutterBottom fontWeight={600}>
                   Order Summary

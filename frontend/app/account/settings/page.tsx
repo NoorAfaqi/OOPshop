@@ -218,7 +218,7 @@ export default function ProfileSettingsPage() {
             Personal Information
           </Typography>
           <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="First Name"
@@ -232,7 +232,7 @@ export default function ProfileSettingsPage() {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="Last Name"
@@ -246,7 +246,7 @@ export default function ProfileSettingsPage() {
                 }}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Phone Number"
@@ -259,7 +259,7 @@ export default function ProfileSettingsPage() {
                 }}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Profile Picture URL"
@@ -276,7 +276,7 @@ export default function ProfileSettingsPage() {
               />
             </Grid>
             {form.profile_picture_url && (
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Box
                   sx={{
                     display: "flex",
@@ -317,7 +317,7 @@ export default function ProfileSettingsPage() {
             Billing Address
           </Typography>
           <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Street Address"
@@ -330,7 +330,7 @@ export default function ProfileSettingsPage() {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="City"
@@ -343,7 +343,7 @@ export default function ProfileSettingsPage() {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={3}>
+            <Grid size={{ xs: 12, sm: 3 }}>
               <TextField
                 fullWidth
                 label="ZIP Code"
@@ -356,7 +356,7 @@ export default function ProfileSettingsPage() {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={3}>
+            <Grid size={{ xs: 12, sm: 3 }}>
               <TextField
                 fullWidth
                 label="Country"

@@ -178,90 +178,85 @@ export default function CheckoutPage() {
     0
   );
 
-  // Create invoice first, then show PayPal button
-  const createInvoice = async () => {
-    setLoading(true);
-    setError(null);
+  // Prepare checkout data (used when creating invoice)
+  const getCheckoutData = () => {
+    const checkoutData: any = {
+      items: cart.map((item) => ({
+        product_id: item.product.id,
+        quantity: item.quantity,
+      })),
+    };
 
-    try {
-      const token = typeof window !== "undefined" 
-        ? localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) 
-        : null;
+    if (!isAuthenticated) {
+      // For guest checkout, include all form data
+      checkoutData.first_name = form.first_name;
+      checkoutData.last_name = form.last_name;
+      checkoutData.phone = form.phone || undefined;
+      checkoutData.billing_street = form.billing_street;
+      checkoutData.billing_zip = form.billing_zip;
+      checkoutData.billing_city = form.billing_city;
+      checkoutData.billing_country = form.billing_country;
 
-      // Prepare checkout data
-      const checkoutData: any = {
-        items: cart.map((item) => ({
-          product_id: item.product.id,
-          quantity: item.quantity,
-        })),
-      };
-
-      if (isAuthenticated && token) {
-        // For authenticated users, use the authenticated endpoint
-        const checkoutRes = await fetch(`${API_BASE}/checkout`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(checkoutData),
-        });
-
-        if (!checkoutRes.ok) {
-          const errorData = await checkoutRes.json().catch(() => ({}));
-          throw new Error(errorData.message || "Checkout failed");
-        }
-
-        const invoice = await checkoutRes.json();
-        const invoiceId = invoice.id || invoice.data?.id;
-        setInvoiceId(invoiceId);
-        
-        // Load PayPal and create order
-        await loadPayPalAndCreateOrder(invoiceId);
-      } else {
-        // For guest checkout, include all form data
-        checkoutData.first_name = form.first_name;
-        checkoutData.last_name = form.last_name;
-        checkoutData.phone = form.phone || undefined;
-        checkoutData.billing_street = form.billing_street;
-        checkoutData.billing_zip = form.billing_zip;
-        checkoutData.billing_city = form.billing_city;
-        checkoutData.billing_country = form.billing_country;
-
-        // Only include email if user wants to create an account
-        if (!isGuest && form.email) {
-          checkoutData.email = form.email;
-        }
-
-        // Use public checkout endpoint
-        const checkoutRes = await fetch(`${API_BASE}/checkout`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(checkoutData),
-        });
-
-        if (!checkoutRes.ok) {
-          const errorData = await checkoutRes.json().catch(() => ({}));
-          throw new Error(errorData.message || "Checkout failed");
-        }
-
-        const invoice = await checkoutRes.json();
-        const invoiceId = invoice.id || invoice.data?.id;
-        setInvoiceId(invoiceId);
-        
-        // Load PayPal and create order
-        await loadPayPalAndCreateOrder(invoiceId);
+      // Only include email if user wants to create an account
+      if (!isGuest && form.email) {
+        checkoutData.email = form.email;
       }
-    } catch (err: any) {
-      setError(err.message || "Checkout failed");
-      setLoading(false);
+    }
+
+    return checkoutData;
+  };
+
+  // Create invoice (called when user clicks PayPal button)
+  const createInvoice = async (): Promise<number> => {
+    const token = typeof window !== "undefined" 
+      ? localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) 
+      : null;
+
+    const checkoutData = getCheckoutData();
+
+    if (isAuthenticated && token) {
+      // For authenticated users, use the authenticated endpoint
+      const checkoutRes = await fetch(`${API_BASE}/checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(checkoutData),
+      });
+
+      if (!checkoutRes.ok) {
+        const errorData = await checkoutRes.json().catch(() => ({}));
+        throw new Error(errorData.message || "Checkout failed");
+      }
+
+      const invoice = await checkoutRes.json();
+      return invoice.id || invoice.data?.id;
+    } else {
+      // Use public checkout endpoint
+      const checkoutRes = await fetch(`${API_BASE}/checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(checkoutData),
+      });
+
+      if (!checkoutRes.ok) {
+        const errorData = await checkoutRes.json().catch(() => ({}));
+        throw new Error(errorData.message || "Checkout failed");
+      }
+
+      const invoice = await checkoutRes.json();
+      return invoice.id || invoice.data?.id;
     }
   };
 
-  // Load PayPal SDK and create order
-  const loadPayPalAndCreateOrder = async (invoiceId: number) => {
+  // Load PayPal SDK and show button (no invoice creation yet)
+  const loadPayPal = async () => {
+    setLoading(true);
+    setError(null);
+
     if (!PAYPAL_CLIENT_ID) {
       setError("PayPal is not configured. Please contact support.");
       setLoading(false);
@@ -275,7 +270,8 @@ export default function CheckoutPage() {
       script.async = true;
       script.onload = () => {
         setPaypalLoaded(true);
-        renderPayPalButton(invoiceId);
+        renderPayPalButton();
+        setLoading(false);
       };
       script.onerror = () => {
         setError("Failed to load PayPal SDK");
@@ -284,12 +280,13 @@ export default function CheckoutPage() {
       document.body.appendChild(script);
     } else {
       setPaypalLoaded(true);
-      renderPayPalButton(invoiceId);
+      renderPayPalButton();
+      setLoading(false);
     }
   };
 
-  // Render PayPal button
-  const renderPayPalButton = async (invoiceId: number) => {
+  // Render PayPal button (invoice will be created when user clicks PayPal button)
+  const renderPayPalButton = async () => {
     if (!window.paypal || !paypalButtonContainerRef.current) {
       return;
     }
@@ -302,6 +299,15 @@ export default function CheckoutPage() {
     try {
       window.paypal.Buttons({
         createOrder: async () => {
+          // Create invoice first (only when user actually clicks PayPal button)
+          let invoiceId: number;
+          try {
+            invoiceId = await createInvoice();
+            setInvoiceId(invoiceId);
+          } catch (err: any) {
+            throw new Error(err.message || "Failed to create invoice");
+          }
+
           // Create PayPal order on backend
           const response = await fetch(`${API_BASE}/payments/paypal/create-order`, {
             method: "POST",
@@ -328,6 +334,12 @@ export default function CheckoutPage() {
         onApprove: async (data: any) => {
           setLoading(true);
           try {
+            // Get invoice_id from state (set in createOrder)
+            const currentInvoiceId = invoiceId;
+            if (!currentInvoiceId) {
+              throw new Error("Invoice ID not found");
+            }
+
             const token = typeof window !== "undefined" 
               ? localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) 
               : null;
@@ -351,7 +363,7 @@ export default function CheckoutPage() {
               },
               body: JSON.stringify({
                 orderId: data.orderID,
-                invoice_id: invoiceId,
+                invoice_id: currentInvoiceId,
                 ...(userId ? { user_id: userId } : {}),
               }),
             });
@@ -366,7 +378,7 @@ export default function CheckoutPage() {
             setCart([]);
 
             // Redirect to success page
-            router.push(`/checkout/success?id=${invoiceId}`);
+            router.push(`/checkout/success?id=${currentInvoiceId}`);
           } catch (err: any) {
             setError(err.message || "Payment processing failed");
             setLoading(false);
@@ -378,12 +390,13 @@ export default function CheckoutPage() {
           setLoading(false);
         },
         onCancel: () => {
-          setError("Payment was cancelled");
+          setError("Payment was cancelled. No order was created.");
           setLoading(false);
+          // Reset invoice ID since payment was cancelled
+          setInvoiceId(null);
         },
       }).render(paypalButtonContainerRef.current);
 
-      setLoading(false);
     } catch (err: any) {
       setError(err.message || "Failed to initialize PayPal");
       setLoading(false);
@@ -392,7 +405,8 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await createInvoice();
+    // Just load PayPal - invoice will be created when user clicks PayPal button
+    await loadPayPal();
   };
 
   return (
@@ -645,7 +659,7 @@ export default function CheckoutPage() {
                   €{total.toFixed(2)}
                 </Typography>
               </Box>
-              {!invoiceId ? (
+              {!paypalLoaded ? (
                 <Button
                   fullWidth
                   variant="contained"
@@ -654,7 +668,7 @@ export default function CheckoutPage() {
                   disabled={loading}
                   sx={{ mt: 3, borderRadius: 999 }}
                 >
-                  {loading ? "Processing..." : "Continue to Payment"}
+                  {loading ? "Loading..." : "Continue to Payment"}
                 </Button>
               ) : (
                 <Box sx={{ mt: 3 }}>
