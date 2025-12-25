@@ -56,15 +56,12 @@ export default function SignInPage() {
       if (typeof window !== "undefined") {
         localStorage.setItem("auth_token", data.data.token);
         localStorage.setItem("user_data", JSON.stringify(data.data.user));
+        // Dispatch event to update auth state in other components
+        window.dispatchEvent(new Event("authChanged"));
       }
 
-      // Redirect based on role
-      const user = data.data.user;
-      if (user.role === "admin" || user.role === "manager") {
-        router.push("/dashboard");
-      } else {
-        router.push("/account");
-      }
+      // Go back to previous page instead of redirecting
+      router.back();
     } catch (err: any) {
       setError(err.message || "Login failed");
     } finally {

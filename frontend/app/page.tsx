@@ -1,8 +1,11 @@
 "use client";
 
-import { Box, Button, Container, Typography, AppBar, Toolbar, Grid, Card, CardContent, alpha } from "@mui/material";
+import { Box, Button, Container, Typography, AppBar, Toolbar, Card, CardContent, alpha } from "@mui/material";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import StoreIcon from "@mui/icons-material/Store";
+import UserProfileMenu from "@/components/shared/UserProfileMenu";
+import { STORAGE_KEYS } from "@/lib/config/api.config";
 import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
 import VerifiedUserOutlinedIcon from "@mui/icons-material/VerifiedUserOutlined";
 import SupportAgentOutlinedIcon from "@mui/icons-material/SupportAgentOutlined";
@@ -10,6 +13,23 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
 export default function Home() {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const checkAuth = () => {
+      if (typeof window !== "undefined") {
+        const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+        setIsAuthenticated(!!token);
+      }
+    };
+    checkAuth();
+
+    // Listen for storage changes (e.g., when user signs in/out in another tab)
+    window.addEventListener("storage", checkAuth);
+    return () => window.removeEventListener("storage", checkAuth);
+  }, []);
 
   const features = [
     {
@@ -56,7 +76,7 @@ export default function Home() {
               OOPshop
             </Typography>
           </Box>
-          <Box sx={{ display: "flex", gap: 1 }}>
+          <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
             <Button
               onClick={() => router.push("/shop")}
               sx={{
@@ -70,19 +90,23 @@ export default function Home() {
             >
               Shop
             </Button>
-            <Button
-              onClick={() => router.push("/signin")}
-              sx={{
-                color: "#1a1a1a",
-                textTransform: "none",
-                fontSize: "15px",
-                fontWeight: 500,
-                px: 2,
-                "&:hover": { bgcolor: alpha("#000", 0.05) }
-              }}
-            >
-              Sign In
-            </Button>
+            {mounted && (isAuthenticated ? (
+              <UserProfileMenu />
+            ) : (
+              <Button
+                onClick={() => router.push("/signin")}
+                sx={{
+                  color: "#1a1a1a",
+                  textTransform: "none",
+                  fontSize: "15px",
+                  fontWeight: 500,
+                  px: 2,
+                  "&:hover": { bgcolor: alpha("#000", 0.05) }
+                }}
+              >
+                Sign In
+              </Button>
+            ))}
           </Box>
         </Toolbar>
       </AppBar>
@@ -190,61 +214,69 @@ export default function Home() {
 
       {/* Features Section */}
       <Container maxWidth="lg" sx={{ py: 8 }}>
-        <Grid container spacing={4}>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "1fr",
+              md: "repeat(3, 1fr)",
+            },
+            gap: 4,
+          }}
+        >
           {features.map((feature, index) => (
-            <Grid item xs={12} md={4} key={index}>
-              <Card
-                elevation={0}
-                sx={{
-                  height: "100%",
-                  bgcolor: "white",
-                  borderRadius: "16px",
-                  border: "1px solid",
-                  borderColor: "divider",
-                  transition: "all 0.3s ease",
-                  "&:hover": {
-                    transform: "translateY(-8px)",
-                    boxShadow: "0 20px 40px rgba(0,0,0,0.08)",
-                  },
-                }}
-              >
-                <CardContent sx={{ textAlign: "center", p: 4 }}>
-                  <Box
-                    sx={{
-                      display: "inline-flex",
-                      p: 2,
-                      borderRadius: "16px",
-                      bgcolor: alpha("#667eea", 0.1),
-                      color: "#667eea",
-                      mb: 2,
-                    }}
-                  >
-                    {feature.icon}
-                  </Box>
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontWeight: 600,
-                      mb: 1,
-                      color: "#1a1a1a",
-                    }}
-                  >
-                    {feature.title}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: "text.secondary",
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    {feature.description}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
+            <Card
+              key={index}
+              elevation={0}
+              sx={{
+                height: "100%",
+                bgcolor: "white",
+                borderRadius: "16px",
+                border: "1px solid",
+                borderColor: "divider",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  transform: "translateY(-8px)",
+                  boxShadow: "0 20px 40px rgba(0,0,0,0.08)",
+                },
+              }}
+            >
+              <CardContent sx={{ textAlign: "center", p: 4 }}>
+                <Box
+                  sx={{
+                    display: "inline-flex",
+                    p: 2,
+                    borderRadius: "16px",
+                    bgcolor: alpha("#667eea", 0.1),
+                    color: "#667eea",
+                    mb: 2,
+                  }}
+                >
+                  {feature.icon}
+                </Box>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 600,
+                    mb: 1,
+                    color: "#1a1a1a",
+                  }}
+                >
+                  {feature.title}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "text.secondary",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {feature.description}
+                </Typography>
+              </CardContent>
+            </Card>
           ))}
-        </Grid>
+        </Box>
       </Container>
 
       {/* CTA Section */}
@@ -303,66 +335,6 @@ export default function Home() {
         </Container>
       </Box>
 
-      {/* Footer */}
-      <Box
-        sx={{
-          py: 4,
-          bgcolor: "#fafafa",
-          borderTop: "1px solid",
-          borderColor: "divider",
-        }}
-      >
-        <Container maxWidth="lg">
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: 2,
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <StoreIcon sx={{ color: "#1a1a1a" }} />
-              <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                © 2025 OOPshop. All rights reserved.
-              </Typography>
-            </Box>
-            <Box sx={{ display: "flex", gap: 3 }}>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: "text.secondary",
-                  cursor: "pointer",
-                  "&:hover": { color: "#667eea" },
-                }}
-              >
-                Privacy
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: "text.secondary",
-                  cursor: "pointer",
-                  "&:hover": { color: "#667eea" },
-                }}
-              >
-                Terms
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: "text.secondary",
-                  cursor: "pointer",
-                  "&:hover": { color: "#667eea" },
-                }}
-              >
-                Contact
-              </Typography>
-            </Box>
-          </Box>
-        </Container>
-      </Box>
     </Box>
   );
 }

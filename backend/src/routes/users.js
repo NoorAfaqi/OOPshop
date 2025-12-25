@@ -7,16 +7,38 @@ const authMiddleware = require("../middleware/auth");
 const router = express.Router();
 
 /**
- * Get all users (admin only)
+ * Get all users (admin/manager only)
  */
 router.get(
   "/",
-  authMiddleware.requireAdmin(),
+  authMiddleware.requireAuth(),
   asyncHandler(async (req, res) => {
+    // Only admin and manager can view all users
+    if (!['admin', 'manager'].includes(req.user.role)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
     const [users] = await require("../config/database").query(
-      "SELECT id, email, first_name, last_name, phone, role, is_active, created_at FROM users ORDER BY created_at DESC"
+      `SELECT id, email, first_name, last_name, phone, role, is_active, 
+       billing_street, billing_zip, billing_city, billing_country, 
+       created_at FROM users ORDER BY created_at DESC`
     );
     successResponse(res, users, "Users fetched successfully");
+  })
+);
+
+/**
+ * Create new user (admin/manager only)
+ */
+router.post(
+  "/",
+  authMiddleware.requireAuth(),
+  asyncHandler(async (req, res) => {
+    // Only admin and manager can create users
+    if (!['admin', 'manager'].includes(req.user.role)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+    const user = await authService.createUser(req.body);
+    successResponse(res, user, "User created successfully", 201);
   })
 );
 
@@ -27,8 +49,8 @@ router.get(
   "/:id",
   authMiddleware.requireAuth(),
   asyncHandler(async (req, res) => {
-    // Users can only view their own profile unless they're admin
-    if (req.user.role !== 'admin' && req.user.id !== parseInt(req.params.id)) {
+    // Users can only view their own profile unless they're admin/manager
+    if (!['admin', 'manager'].includes(req.user.role) && req.user.id !== parseInt(req.params.id)) {
       return res.status(403).json({ message: "Access denied" });
     }
     const user = await authService.getUserById(req.params.id);
@@ -43,8 +65,8 @@ router.put(
   "/:id",
   authMiddleware.requireAuth(),
   asyncHandler(async (req, res) => {
-    // Users can only update their own profile unless they're admin
-    if (req.user.role !== 'admin' && req.user.id !== parseInt(req.params.id)) {
+    // Users can only update their own profile unless they're admin/manager
+    if (!['admin', 'manager'].includes(req.user.role) && req.user.id !== parseInt(req.params.id)) {
       return res.status(403).json({ message: "Access denied" });
     }
     const user = await authService.updateUser(req.params.id, req.body);

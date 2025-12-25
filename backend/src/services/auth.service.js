@@ -130,7 +130,9 @@ class AuthService {
   async getUserById(id) {
     try {
       const [rows] = await pool.query(
-        "SELECT id, email, first_name, last_name, phone, role, is_active, created_at FROM users WHERE id = ?",
+        `SELECT id, email, first_name, last_name, phone, role, is_active, 
+         billing_street, billing_zip, billing_city, billing_country, 
+         created_at, updated_at FROM users WHERE id = ?`,
         [id]
       );
       
@@ -147,11 +149,95 @@ class AuthService {
   }
   
   /**
+   * Create user (for admin/manager creating customers)
+   */
+  async createUser(userData) {
+    try {
+      const { 
+        email, 
+        password, 
+        first_name, 
+        last_name, 
+        phone, 
+        role = 'customer',
+        billing_street,
+        billing_zip,
+        billing_city,
+        billing_country
+      } = userData;
+      
+      if (!first_name || !last_name) {
+        throw new AppError("First name and last name are required", 400);
+      }
+      
+      // If email is provided, check if user already exists
+      if (email) {
+        const [existing] = await pool.query(
+          "SELECT id FROM users WHERE email = ?",
+          [email]
+        );
+        
+        if (existing.length > 0) {
+          throw new AppError("Email already registered", 400);
+        }
+      }
+      
+      // Validate role
+      const validRoles = ['admin', 'manager', 'customer', 'guest'];
+      if (!validRoles.includes(role)) {
+        throw new AppError("Invalid role", 400);
+      }
+      
+      // Hash password if provided
+      let password_hash = null;
+      if (password) {
+        password_hash = await bcrypt.hash(password, 10);
+      }
+      
+      // Create user
+      const [result] = await pool.query(
+        `INSERT INTO users (
+          email, password_hash, first_name, last_name, phone, role,
+          billing_street, billing_zip, billing_city, billing_country
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          email || null, 
+          password_hash, 
+          first_name, 
+          last_name, 
+          phone || null, 
+          role,
+          billing_street || null,
+          billing_zip || null,
+          billing_city || null,
+          billing_country || null
+        ]
+      );
+      
+      logger.info(`New user created: ${first_name} ${last_name} (role: ${role})`);
+      
+      return await this.getUserById(result.insertId);
+    } catch (error) {
+      if (error.statusCode) throw error;
+      logger.error("Error creating user:", error);
+      throw new AppError("Failed to create user", 500);
+    }
+  }
+
+  /**
    * Update user
    */
   async updateUser(id, updates) {
     try {
-      const allowedUpdates = ['first_name', 'last_name', 'phone'];
+      const allowedUpdates = [
+        'first_name', 
+        'last_name', 
+        'phone',
+        'billing_street',
+        'billing_zip',
+        'billing_city',
+        'billing_country'
+      ];
       const updateFields = [];
       const values = [];
       

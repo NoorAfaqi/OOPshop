@@ -22,6 +22,7 @@ const userRoutes = require("./routes/users");
 const invoiceRoutes = require("./routes/invoices");
 const reportsRoutes = require("./routes/reports");
 const paymentsRoutes = require("./routes/payments");
+const accountRoutes = require("./routes/account.routes");
 const authMiddleware = require("./middleware/auth");
 
 const app = express();
@@ -118,6 +119,7 @@ app.use("/users", authMiddleware(), userRoutes);
 app.use("/invoices", authMiddleware(), invoiceRoutes);
 app.use("/reports", authMiddleware(), reportsRoutes);
 app.use("/payments", authMiddleware(), paymentsRoutes);
+app.use("/account", authMiddleware(), accountRoutes);
 
 // 404 handler
 app.use((req, res) => {

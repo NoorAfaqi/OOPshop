@@ -71,6 +71,11 @@ const { asyncHandler } = require("../middleware/errorHandler");
  *                   $ref: '#/components/schemas/Invoice'
  */
 const processCheckout = asyncHandler(async (req, res) => {
+  // If user is authenticated, use their user_id from token
+  if (req.user && req.user.id) {
+    req.body.user_id = req.user.id;
+  }
+  
   const invoice = await checkoutService.processCheckout(req.body);
   successResponse(res, invoice, "Checkout processed successfully", 201);
 });

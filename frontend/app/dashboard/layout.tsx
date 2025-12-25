@@ -9,26 +9,34 @@ import {
   IconButton,
   List,
   ListItemButton,
+  ListItemIcon,
   ListItemText,
   Toolbar,
   Typography,
+  Avatar,
+  Divider,
+  alpha,
 } from "@mui/material";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import Inventory2Icon from "@mui/icons-material/Inventory2";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import InsightsIcon from "@mui/icons-material/Insights";
-import LogoutIcon from "@mui/icons-material/Logout";
+import PaymentIcon from "@mui/icons-material/Payment";
+import UserProfileMenu from "@/components/shared/UserProfileMenu";
+import StoreIcon from "@mui/icons-material/Store";
 import { usePathname, useRouter } from "next/navigation";
+import { STORAGE_KEYS } from "@/lib/config/api.config";
 
-const drawerWidth = 220;
+const drawerWidth = 260;
 
 const navItems = [
-  { label: "Overview", icon: <DashboardIcon fontSize="small" />, href: "/dashboard" },
-  { label: "Products", icon: <Inventory2Icon fontSize="small" />, href: "/dashboard/products" },
-  { label: "Users", icon: <PeopleAltIcon fontSize="small" />, href: "/dashboard/users" },
-  { label: "Invoices", icon: <ReceiptLongIcon fontSize="small" />, href: "/dashboard/invoices" },
-  { label: "Reports", icon: <InsightsIcon fontSize="small" />, href: "/dashboard/reports" },
+  { label: "Overview", icon: DashboardIcon, href: "/dashboard" },
+  { label: "Products", icon: Inventory2Icon, href: "/dashboard/products" },
+  { label: "Users", icon: PeopleAltIcon, href: "/dashboard/users" },
+  { label: "Invoices", icon: ReceiptLongIcon, href: "/dashboard/invoices" },
+  { label: "Reports", icon: InsightsIcon, href: "/dashboard/reports" },
+  { label: "Payments", icon: PaymentIcon, href: "/dashboard/payments" },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -37,7 +45,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const token = window.localStorage.getItem("token");
+    const token = window.localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
     if (!token) {
       router.replace("/login");
     }
@@ -45,7 +53,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   const handleLogout = () => {
     if (typeof window !== "undefined") {
-      window.localStorage.removeItem("token");
+      window.localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+      window.localStorage.removeItem(STORAGE_KEYS.USER_DATA);
     }
     router.replace("/login");
   };
@@ -58,18 +67,38 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         elevation={0}
         sx={{
           zIndex: (theme) => theme.zIndex.drawer + 1,
-          backdropFilter: "blur(16px)",
-          backgroundColor: "rgba(248,249,251,0.9)",
-          borderBottom: "1px solid rgba(15,23,42,0.06)",
+          backdropFilter: "blur(20px)",
+          backgroundColor: alpha("#ffffff", 0.8),
+          borderBottom: "1px solid",
+          borderColor: "divider",
         }}
       >
-        <Toolbar sx={{ minHeight: 64 }}>
-          <Typography variant="h6" color="text.primary" sx={{ flexGrow: 1, fontWeight: 600 }}>
-            OOP Shop Manager
-          </Typography>
-          <IconButton color="inherit" size="small" onClick={handleLogout}>
-            <LogoutIcon fontSize="small" />
-          </IconButton>
+        <Toolbar sx={{ minHeight: 70, px: 3 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexGrow: 1 }}>
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: 2,
+                bgcolor: "primary.main",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
+              }}
+            >
+              <StoreIcon />
+            </Box>
+            <Box>
+              <Typography variant="h6" color="text.primary" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                OOP Shop Manager
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1 }}>
+                Management Portal
+              </Typography>
+            </Box>
+          </Box>
+          <UserProfileMenu />
         </Toolbar>
       </AppBar>
       <Drawer
@@ -80,30 +109,62 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           "& .MuiDrawer-paper": {
             width: drawerWidth,
             boxSizing: "border-box",
-            borderRight: "1px solid rgba(15,23,42,0.06)",
-            backgroundColor: "rgba(248,249,251,0.9)",
-            backdropFilter: "blur(20px)",
+            borderRight: "1px solid",
+            borderColor: "divider",
+            backgroundColor: "#fafbfc",
           },
         }}
       >
         <Toolbar />
-        <Box sx={{ overflow: "auto", mt: 1 }}>
-          <List dense>
-            {navItems.map((item) => (
-              <ListItemButton
-                key={item.href}
-                onClick={() => router.push(item.href)}
-                selected={pathname === item.href}
-                sx={{
-                  mx: 1.5,
-                  mb: 0.5,
-                  borderRadius: 999,
-                }}
-              >
-                {item.icon}
-                <ListItemText primary={item.label} sx={{ ml: 1 }} />
-              </ListItemButton>
-            ))}
+        <Box sx={{ overflow: "auto", px: 2, py: 2 }}>
+          <List disablePadding>
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isSelected = pathname === item.href;
+              return (
+                <ListItemButton
+                  key={item.href}
+                  onClick={() => router.push(item.href)}
+                  selected={isSelected}
+                  sx={{
+                    mb: 0.5,
+                    borderRadius: 2,
+                    py: 1.25,
+                    px: 2,
+                    "&.Mui-selected": {
+                      bgcolor: "primary.main",
+                      color: "white",
+                      "&:hover": {
+                        bgcolor: "primary.dark",
+                      },
+                      "& .MuiListItemIcon-root": {
+                        color: "white",
+                      },
+                    },
+                    "&:hover": {
+                      bgcolor: alpha("#000", 0.04),
+                    },
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <ListItemIcon
+                    sx={{
+                      minWidth: 40,
+                      color: isSelected ? "white" : "text.secondary",
+                    }}
+                  >
+                    <Icon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={item.label}
+                    primaryTypographyProps={{
+                      fontWeight: isSelected ? 600 : 500,
+                      fontSize: "0.9375rem",
+                    }}
+                  />
+                </ListItemButton>
+              );
+            })}
           </List>
         </Box>
       </Drawer>
@@ -111,10 +172,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
-          pl: 3,
-          mt: 8,
-          ml: `${drawerWidth}px`,
+          p: 2,
+          mt: 8.75,
+          ml: `${10}px`,
+          minHeight: "calc(100vh - 70px)",
+          bgcolor: "#f8f9fa",
         }}
       >
         {children}

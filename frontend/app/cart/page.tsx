@@ -22,6 +22,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import StoreIcon from "@mui/icons-material/Store";
 import { useRouter } from "next/navigation";
+import { STORAGE_KEYS } from "@/lib/config/api.config";
 
 interface Product {
   id: number;
@@ -41,21 +42,67 @@ export default function CartPage() {
   const router = useRouter();
   const [cart, setCart] = useState<CartItem[]>([]);
 
-  useEffect(() => {
+  const loadCart = () => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("cart");
+      const saved = localStorage.getItem(STORAGE_KEYS.CART);
       if (saved) {
         try {
           setCart(JSON.parse(saved));
         } catch {}
+      } else {
+        setCart([]);
       }
     }
+  };
+
+  useEffect(() => {
+    loadCart();
+
+    // Listen for storage changes (when cart is updated from other tabs/pages)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEYS.CART) {
+        loadCart();
+      }
+    };
+
+    // Listen for focus event (when user returns to this tab)
+    const handleFocus = () => {
+      loadCart();
+    };
+
+    // Listen for visibility change (when user switches back to this tab)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadCart();
+      }
+    };
+
+    // Custom event listener for cart updates in the same tab
+    const handleCartUpdate = () => {
+      setTimeout(() => {
+        loadCart();
+      }, 50);
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("cartUpdated", handleCartUpdate);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("cartUpdated", handleCartUpdate);
+    };
   }, []);
 
   const updateCart = (newCart: CartItem[]) => {
     setCart(newCart);
     if (typeof window !== "undefined") {
-      localStorage.setItem("cart", JSON.stringify(newCart));
+      localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(newCart));
+      // Dispatch event to notify other pages
+      window.dispatchEvent(new Event("cartUpdated"));
     }
   };
 
@@ -92,7 +139,7 @@ export default function CartPage() {
         }}
       >
         <Toolbar>
-          <IconButton onClick={() => router.push("/shop")} sx={{ mr: 1 }}>
+          <IconButton onClick={() => router.back()} sx={{ mr: 1 }}>
             <ArrowBackIcon />
           </IconButton>
           <StoreIcon sx={{ mr: 1, color: "primary.main" }} />

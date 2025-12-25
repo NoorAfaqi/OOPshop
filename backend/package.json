@@ -14,6 +14,7 @@
     "migrate:users": "node scripts/migrate-managers-to-users.js",
     "create-admin": "node scripts/create-admin.js",
     "generate-password": "node scripts/generate-password.js",
+    "seed": "node scripts/seed.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

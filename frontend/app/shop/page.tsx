@@ -18,6 +18,7 @@ import {
   InputAdornment,
   alpha,
   CircularProgress,
+  MenuItem,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
@@ -25,6 +26,8 @@ import StoreIcon from "@mui/icons-material/Store";
 import AddShoppingCartIcon from "@mui/icons-material/AddShoppingCart";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { STORAGE_KEYS } from "@/lib/config/api.config";
+import UserProfileMenu from "@/components/shared/UserProfileMenu";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -46,27 +49,78 @@ interface CartItem {
 export default function ShopPage() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedBrand, setSelectedBrand] = useState<string>("all");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [isCartLoaded, setIsCartLoaded] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  useEffect(() => {
+  const categories = Array.from(new Set(allProducts.map(p => p.category).filter(Boolean))) as string[];
+  const brands = Array.from(new Set(allProducts.map(p => p.brand).filter(Boolean))) as string[];
+
+  const loadCart = () => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("cart");
+      const saved = localStorage.getItem(STORAGE_KEYS.CART);
       if (saved) {
         try {
-          setCart(JSON.parse(saved));
-        } catch {}
+          const parsed = JSON.parse(saved);
+          setCart(parsed);
+          setIsCartLoaded(true);
+        } catch {
+          setCart([]);
+          setIsCartLoaded(true);
+        }
+      } else {
+        setCart([]);
+        setIsCartLoaded(true);
       }
     }
+  };
+
+  useEffect(() => {
+    setMounted(true);
+    loadCart();
+    const checkAuth = () => {
+      if (typeof window !== "undefined") {
+        const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+        setIsAuthenticated(!!token);
+      }
+    };
+    checkAuth();
+
+    // Listen for storage changes (e.g., when user signs in/out in another tab)
+    window.addEventListener("storage", checkAuth);
+    return () => window.removeEventListener("storage", checkAuth);
+
+    // Listen for cart updates from other pages only
+    const handleCartUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      // Only reload if the update came from another page
+      if (customEvent.detail?.source !== "shop") {
+        setTimeout(() => {
+          loadCart();
+        }, 50);
+      }
+    };
+
+    window.addEventListener("cartUpdated", handleCartUpdate);
+
+    return () => {
+      window.removeEventListener("cartUpdated", handleCartUpdate);
+    };
   }, []);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("cart", JSON.stringify(cart));
+    // Only save to localStorage after cart has been loaded to prevent overwriting with empty array
+    if (isCartLoaded && typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(cart));
     }
-  }, [cart]);
+  }, [cart, isCartLoaded]);
 
   const loadProducts = async () => {
     setLoading(true);
@@ -80,14 +134,30 @@ export default function ShopPage() {
         throw new Error(`Failed to fetch products: ${res.status} ${res.statusText}`);
       }
       const data = await res.json();
-      setProducts(data);
+      setAllProducts(data);
+      filterProducts(data);
     } catch (error: any) {
       console.error("Error loading products:", error);
       setError(error.message || "Failed to load products. Please ensure the backend server is running.");
       setProducts([]);
+      setAllProducts([]);
     } finally {
       setLoading(false);
     }
+  };
+
+  const filterProducts = (productList: Product[]) => {
+    let filtered = productList;
+    
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(p => p.category === selectedCategory);
+    }
+    
+    if (selectedBrand !== "all") {
+      filtered = filtered.filter(p => p.brand === selectedBrand);
+    }
+    
+    setProducts(filtered);
   };
 
   useEffect(() => {
@@ -95,17 +165,33 @@ export default function ShopPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
+  useEffect(() => {
+    filterProducts(allProducts);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory, selectedBrand]);
+
   const addToCart = (product: Product) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
+      const newCart = existing
+        ? prev.map((item) =>
+            item.product.id === product.id
+              ? { ...item, quantity: item.quantity + 1 }
+              : item
+          )
+        : [...prev, { product, quantity: 1 }];
+      
+      // Save to localStorage immediately
+      if (typeof window !== "undefined") {
+        localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(newCart));
+        // Dispatch custom event to notify other pages after a short delay
+        // This ensures localStorage is saved before other pages try to read it
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent("cartUpdated", { detail: { source: "shop" } }));
+        }, 50);
       }
-      return [...prev, { product, quantity: 1 }];
+      
+      return newCart;
     });
   };
 
@@ -155,19 +241,23 @@ export default function ShopPage() {
             >
               Home
             </Button>
-            <Button
-              onClick={() => router.push("/signin")}
-              sx={{
-                color: "#1a1a1a",
-                textTransform: "none",
-                fontSize: "15px",
-                fontWeight: 500,
-                px: 2,
-                "&:hover": { bgcolor: alpha("#000", 0.05) }
-              }}
-            >
-              Sign In
-            </Button>
+            {mounted && (isAuthenticated ? (
+              <UserProfileMenu />
+            ) : (
+              <Button
+                onClick={() => router.push("/signin")}
+                sx={{
+                  color: "#1a1a1a",
+                  textTransform: "none",
+                  fontSize: "15px",
+                  fontWeight: 500,
+                  px: 2,
+                  "&:hover": { bgcolor: alpha("#000", 0.05) }
+                }}
+              >
+                Sign In
+              </Button>
+            ))}
             <IconButton 
               onClick={() => router.push("/cart")}
               sx={{
@@ -176,7 +266,7 @@ export default function ShopPage() {
               }}
             >
               <Badge 
-                badgeContent={cartCount} 
+                badgeContent={mounted ? cartCount : 0} 
                 sx={{
                   "& .MuiBadge-badge": {
                     bgcolor: "#667eea",
@@ -216,37 +306,84 @@ export default function ShopPage() {
             Discover our curated collection
           </Typography>
 
-          {/* Search */}
-          <TextField
-            fullWidth
-            placeholder="Search for products..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ color: "text.secondary" }} />
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              maxWidth: 600,
-              "& .MuiOutlinedInput-root": {
-                borderRadius: "12px",
-                bgcolor: "white",
-                "& fieldset": {
-                  borderColor: "divider",
-                },
-                "&:hover fieldset": {
-                  borderColor: "#667eea",
-                },
-                "&.Mui-focused fieldset": {
-                  borderColor: "#667eea",
-                  borderWidth: "2px",
-                },
-              },
-            }}
-          />
+          {/* Search and Filters */}
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 2 }}>
+            <Box sx={{ flex: { xs: "1 1 100%", md: "1 1 calc(50% - 8px)" }, minWidth: { xs: "100%", md: 0 } }}>
+              <TextField
+                fullWidth
+                placeholder="Search for products..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: "text.secondary" }} />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "12px",
+                    bgcolor: "white",
+                    "& fieldset": {
+                      borderColor: "divider",
+                    },
+                    "&:hover fieldset": {
+                      borderColor: "#667eea",
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "#667eea",
+                      borderWidth: "2px",
+                    },
+                  },
+                }}
+              />
+            </Box>
+            <Box sx={{ flex: { xs: "1 1 calc(50% - 8px)", md: "1 1 calc(25% - 12px)" }, minWidth: { xs: "calc(50% - 8px)", sm: 0 } }}>
+              <TextField
+                fullWidth
+                select
+                label="Category"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "12px",
+                    bgcolor: "white",
+                  },
+                }}
+              >
+                <MenuItem value="all">All Categories</MenuItem>
+                {categories.map((cat) => (
+                  <MenuItem key={cat} value={cat}>
+                    {cat}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Box>
+            <Box sx={{ flex: { xs: "1 1 calc(50% - 8px)", md: "1 1 calc(25% - 12px)" }, minWidth: { xs: "calc(50% - 8px)", sm: 0 } }}>
+              <TextField
+                fullWidth
+                select
+                label="Brand"
+                value={selectedBrand}
+                onChange={(e) => setSelectedBrand(e.target.value)}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "12px",
+                    bgcolor: "white",
+                  },
+                }}
+              >
+                <MenuItem value="all">All Brands</MenuItem>
+                {brands.map((brand) => (
+                  <MenuItem key={brand} value={brand}>
+                    {brand}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Box>
+          </Box>
         </Box>
 
         {/* Error Alert */}
@@ -322,7 +459,10 @@ export default function ShopPage() {
                         src={product.image_url}
                         alt={product.name}
                         fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                         style={{ objectFit: "cover" }}
+                        loading={products.indexOf(product) < 4 ? "eager" : "lazy"}
+                        priority={products.indexOf(product) < 4}
                       />
                     ) : (
                       <Box

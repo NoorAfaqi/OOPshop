@@ -5,12 +5,8 @@ import {
   Box,
   Button,
   Card,
-  Container,
   Typography,
-  AppBar,
-  Toolbar,
   alpha,
-  Grid,
   Paper,
   Chip,
   Divider,
@@ -21,10 +17,8 @@ import {
   TableHead,
   TableRow,
 } from "@mui/material";
-import StoreIcon from "@mui/icons-material/Store";
 import PersonIcon from "@mui/icons-material/Person";
 import ShoppingBagIcon from "@mui/icons-material/ShoppingBag";
-import LogoutIcon from "@mui/icons-material/Logout";
 import { useRouter } from "next/navigation";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -66,32 +60,51 @@ export default function AccountPage() {
           return;
         }
 
-        // Load user data from localStorage
-        const userData =
-          typeof window !== "undefined"
-            ? localStorage.getItem("user_data")
-            : null;
+        // Fetch user data from account/me endpoint
+        const userRes = await fetch(`${API_BASE}/account/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-        if (userData) {
-          const parsedUser = JSON.parse(userData);
-          setUser(parsedUser);
-
-          // Load user's invoices
-          const res = await fetch(
-            `${API_BASE}/users/${parsedUser.id}/invoices`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-
-          if (res.ok) {
-            const data = await res.json();
-            setInvoices(data.data || data);
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          const user = userData.data || userData;
+          setUser(user);
+          
+          // Update localStorage with fresh data
+          if (typeof window !== "undefined") {
+            localStorage.setItem("user_data", JSON.stringify(user));
           }
         } else {
-          router.push("/signin");
+          // Fallback to localStorage if API fails
+          const userData =
+            typeof window !== "undefined"
+              ? localStorage.getItem("user_data")
+              : null;
+
+          if (userData) {
+            const parsedUser = JSON.parse(userData);
+            setUser(parsedUser);
+          } else {
+            router.push("/signin");
+            return;
+          }
+        }
+
+        // Load user's orders using account endpoint
+        const res = await fetch(
+          `${API_BASE}/account/orders`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          setInvoices(data.data || data);
         }
       } catch (error) {
         console.error("Error loading user data:", error);
@@ -103,13 +116,6 @@ export default function AccountPage() {
     loadUserData();
   }, [router]);
 
-  const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("auth_token");
-      localStorage.removeItem("user_data");
-    }
-    router.push("/");
-  };
 
   if (loading) {
     return (
@@ -131,105 +137,45 @@ export default function AccountPage() {
   }
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#fafafa" }}>
-      {/* Navigation */}
-      <AppBar
-        position="sticky"
-        elevation={0}
-        sx={{
-          bgcolor: alpha("#ffffff", 0.8),
-          backdropFilter: "blur(20px)",
-          borderBottom: "1px solid",
-          borderColor: "divider",
-        }}
-      >
-        <Toolbar sx={{ justifyContent: "space-between" }}>
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-              cursor: "pointer",
-            }}
-            onClick={() => router.push("/")}
-          >
-            <StoreIcon sx={{ fontSize: 28, color: "#1a1a1a" }} />
-            <Typography
-              variant="h6"
-              sx={{
-                color: "#1a1a1a",
-                fontWeight: 600,
-                letterSpacing: "-0.5px",
-              }}
-            >
-              OOPshop
-            </Typography>
-          </Box>
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Button
-              onClick={() => router.push("/shop")}
-              sx={{
-                color: "#1a1a1a",
-                textTransform: "none",
-                fontSize: "15px",
-                fontWeight: 500,
-                px: 2,
-                "&:hover": { bgcolor: alpha("#000", 0.05) },
-              }}
-            >
-              Shop
-            </Button>
-            <Button
-              onClick={handleLogout}
-              startIcon={<LogoutIcon />}
-              sx={{
-                color: "#1a1a1a",
-                textTransform: "none",
-                fontSize: "15px",
-                fontWeight: 500,
-                px: 2,
-                "&:hover": { bgcolor: alpha("#000", 0.05) },
-              }}
-            >
-              Logout
-            </Button>
-          </Box>
-        </Toolbar>
-      </AppBar>
-
-      <Container maxWidth="lg" sx={{ py: 6 }}>
+    <Box>
         {/* Profile Header */}
         <Card
           elevation={0}
           sx={{
-            p: 4,
-            mb: 4,
-            borderRadius: "16px",
+            p: 3,
+            mb: 2,
+            borderRadius: 2,
             border: "1px solid",
             borderColor: "divider",
             bgcolor: "white",
           }}
         >
-          <Grid container spacing={3} alignItems="center">
-            <Grid item>
-              <Box
-                sx={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: "20px",
-                  bgcolor: alpha("#667eea", 0.1),
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <PersonIcon sx={{ fontSize: 40, color: "#667eea" }} />
-              </Box>
-            </Grid>
-            <Grid item xs>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: { xs: "column", sm: "row" },
+              alignItems: { xs: "flex-start", sm: "center" },
+              gap: 3,
+            }}
+          >
+            <Box
+              sx={{
+                width: 80,
+                height: 80,
+                borderRadius: "20px",
+                bgcolor: alpha("#667eea", 0.1),
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <PersonIcon sx={{ fontSize: 40, color: "#667eea" }} />
+            </Box>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography
-                variant="h4"
-                sx={{ fontWeight: 700, mb: 0.5, letterSpacing: "-1px" }}
+                variant="h5"
+                sx={{ fontWeight: 600, mb: 0.5 }}
               >
                 {user.first_name} {user.last_name}
               </Typography>
@@ -241,8 +187,8 @@ export default function AccountPage() {
                   {user.phone}
                 </Typography>
               )}
-            </Grid>
-            <Grid item>
+            </Box>
+            <Box sx={{ flexShrink: 0 }}>
               <Chip
                 label={user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                 sx={{
@@ -252,16 +198,16 @@ export default function AccountPage() {
                   borderRadius: "8px",
                 }}
               />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </Card>
 
         {/* Orders Section */}
         <Paper
           elevation={0}
           sx={{
-            p: 4,
-            borderRadius: "16px",
+            p: 3,
+            borderRadius: 2,
             border: "1px solid",
             borderColor: "divider",
             bgcolor: "white",
@@ -277,7 +223,7 @@ export default function AccountPage() {
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
               <ShoppingBagIcon sx={{ fontSize: 28, color: "#667eea" }} />
-              <Typography variant="h5" sx={{ fontWeight: 700 }}>
+              <Typography variant="h5" sx={{ fontWeight: 600 }}>
                 Your Orders
               </Typography>
             </Box>
@@ -324,6 +270,7 @@ export default function AccountPage() {
                   <TableCell sx={{ fontWeight: 600 }}>Items</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Total</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -360,13 +307,21 @@ export default function AccountPage() {
                         }}
                       />
                     </TableCell>
+                    <TableCell>
+                      <Button
+                        size="small"
+                        onClick={() => router.push(`/account/orders/${invoice.id}`)}
+                        sx={{ textTransform: "none" }}
+                      >
+                        View Details
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           )}
         </Paper>
-      </Container>
     </Box>
   );
 }

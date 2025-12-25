@@ -8,6 +8,7 @@ class CheckoutService {
    */
   async processCheckout(checkoutData) {
     const {
+      user_id, // Provided when user is authenticated
       email,
       first_name,
       last_name,
@@ -26,8 +27,23 @@ class CheckoutService {
       
       let userId;
       
-      // Check if user already exists by email
-      if (email) {
+      // If user_id is provided (authenticated user), use it directly
+      if (user_id) {
+        userId = user_id;
+        // Optionally update billing info if provided
+        if (billing_street || billing_zip || billing_city || billing_country) {
+          await connection.query(
+            `UPDATE users SET 
+              billing_street = COALESCE(?, billing_street),
+              billing_zip = COALESCE(?, billing_zip),
+              billing_city = COALESCE(?, billing_city),
+              billing_country = COALESCE(?, billing_country)
+             WHERE id = ?`,
+            [billing_street || null, billing_zip || null, billing_city || null, billing_country || null, userId]
+          );
+        }
+      } else if (email) {
+        // Check if user already exists by email
         const [existingUsers] = await connection.query(
           "SELECT id FROM users WHERE email = ?",
           [email]

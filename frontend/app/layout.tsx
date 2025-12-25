@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeRegistry } from "./ThemeRegistry";
+import Footer from "@/components/shared/Footer";
 
 export const metadata: Metadata = {
   title: "OOP Shop Manager",
@@ -13,9 +14,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>
-        <ThemeRegistry>{children}</ThemeRegistry>
+    <html lang="en" data-scroll-behavior="smooth">
+      <body style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+        <ThemeRegistry>
+          <div style={{ flex: 1 }}>
+            {children}
+          </div>
+          <Footer />
+        </ThemeRegistry>
       </body>
     </html>
   );
