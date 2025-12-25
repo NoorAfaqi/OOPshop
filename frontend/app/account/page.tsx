@@ -16,6 +16,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  Avatar,
 } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 import ShoppingBagIcon from "@mui/icons-material/ShoppingBag";
@@ -30,6 +31,7 @@ interface User {
   last_name: string;
   phone?: string;
   role: string;
+  profile_picture_url?: string;
 }
 
 interface Invoice {
@@ -158,20 +160,32 @@ export default function AccountPage() {
               gap: 3,
             }}
           >
-            <Box
-              sx={{
-                width: 80,
-                height: 80,
-                borderRadius: "20px",
-                bgcolor: alpha("#667eea", 0.1),
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <PersonIcon sx={{ fontSize: 40, color: "#667eea" }} />
-            </Box>
+            {user.profile_picture_url ? (
+              <Avatar
+                src={user.profile_picture_url}
+                sx={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: "20px",
+                  flexShrink: 0,
+                }}
+              />
+            ) : (
+              <Box
+                sx={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: "20px",
+                  bgcolor: alpha("#667eea", 0.1),
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <PersonIcon sx={{ fontSize: 40, color: "#667eea" }} />
+              </Box>
+            )}
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography
                 variant="h5"

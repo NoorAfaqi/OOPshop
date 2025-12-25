@@ -51,6 +51,60 @@ class PaymentService {
       throw new AppError("Failed to process PayPal callback", 500);
     }
   }
+
+  /**
+   * Record PayPal payment after capture
+   */
+  async recordPayPalPayment(paymentData) {
+    const { invoice_id, user_id, amount, transaction_id, status = "completed" } = paymentData;
+
+    if (!invoice_id || !user_id || !amount) {
+      throw new AppError("invoice_id, user_id, and amount are required", 400);
+    }
+
+    const connection = await pool.getConnection();
+    
+    try {
+      await connection.beginTransaction();
+
+      // Insert payment record
+      const [paymentResult] = await connection.query(
+        `INSERT INTO payments (invoice_id, user_id, amount, method, status, paypal_transaction_id)
+         VALUES (?, ?, ?, 'paypal', ?, ?)`,
+        [invoice_id, user_id, amount, status, transaction_id || null]
+      );
+
+      // Update invoice status to paid
+      if (status === "completed") {
+        await connection.query(
+          "UPDATE invoices SET status = 'paid' WHERE id = ?",
+          [invoice_id]
+        );
+      }
+
+      await connection.commit();
+
+      // Fetch the created payment
+      const [paymentRows] = await pool.query(
+        `SELECT p.*, u.first_name, u.last_name, u.email, i.total_amount
+         FROM payments p
+         JOIN users u ON u.id = p.user_id
+         JOIN invoices i ON i.id = p.invoice_id
+         WHERE p.id = ?`,
+        [paymentResult.insertId]
+      );
+
+      logger.info(`PayPal payment recorded: Payment ${paymentResult.insertId} for invoice ${invoice_id}`);
+
+      return paymentRows[0];
+    } catch (error) {
+      await connection.rollback();
+      logger.error("Error recording PayPal payment:", error);
+      throw new AppError("Failed to record PayPal payment", 500);
+    } finally {
+      connection.release();
+    }
+  }
 }
 
 module.exports = new PaymentService();

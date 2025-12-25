@@ -47,14 +47,54 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
       return;
     }
 
-    const userData = window.localStorage.getItem(STORAGE_KEYS.USER_DATA);
-    if (userData) {
+    const loadUser = async () => {
+      // Try to fetch fresh user data from API
       try {
-        setUser(JSON.parse(userData));
-      } catch (e) {
-        console.error("Failed to parse user data", e);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/account/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const userData = data.data || data;
+          setUser(userData);
+          window.localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
+        } else {
+          // Fallback to localStorage
+          const userData = window.localStorage.getItem(STORAGE_KEYS.USER_DATA);
+          if (userData) {
+            try {
+              setUser(JSON.parse(userData));
+            } catch (e) {
+              console.error("Failed to parse user data", e);
+            }
+          }
+        }
+      } catch (error) {
+        // Fallback to localStorage if API fails
+        const userData = window.localStorage.getItem(STORAGE_KEYS.USER_DATA);
+        if (userData) {
+          try {
+            setUser(JSON.parse(userData));
+          } catch (e) {
+            console.error("Failed to parse user data", e);
+          }
+        }
       }
-    }
+    };
+
+    loadUser();
+    
+    // Listen for auth changes to refresh user data
+    const handleAuthChange = () => {
+      loadUser();
+    };
+    window.addEventListener("authChanged", handleAuthChange);
+    
+    return () => {
+      window.removeEventListener("authChanged", handleAuthChange);
+    };
   }, [router]);
 
   const getInitials = () => {
@@ -138,6 +178,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
               <Avatar
+                src={user?.profile_picture_url || undefined}
                 sx={{
                   width: 56,
                   height: 56,

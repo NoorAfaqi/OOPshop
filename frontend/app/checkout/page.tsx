@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Box,
   Button,
@@ -15,6 +15,7 @@ import {
   Alert,
   Divider,
   Chip,
+  CircularProgress,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import StoreIcon from "@mui/icons-material/Store";
@@ -24,6 +25,7 @@ import { useRouter } from "next/navigation";
 import { STORAGE_KEYS } from "@/lib/config/api.config";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const PAYPAL_CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "";
 
 interface Product {
   id: number;
@@ -36,13 +38,23 @@ interface CartItem {
   quantity: number;
 }
 
+declare global {
+  interface Window {
+    paypal?: any;
+  }
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingUser, setLoadingUser] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isGuest, setIsGuest] = useState(true);
+  const [invoiceId, setInvoiceId] = useState<number | null>(null);
+  const [paypalLoaded, setPaypalLoaded] = useState(false);
+  const paypalButtonContainerRef = useRef<HTMLDivElement>(null);
   const [form, setForm] = useState({
     email: "",
     first_name: "",
@@ -81,6 +93,7 @@ export default function CheckoutPage() {
         if (token) {
           setIsAuthenticated(true);
           setIsGuest(false);
+          setLoadingUser(true);
 
           // Load user data and pre-fill form
           try {
@@ -92,8 +105,10 @@ export default function CheckoutPage() {
 
             if (userRes.ok) {
               const userData = await userRes.json();
+              // Handle both response formats: { data: {...} } or direct user object
               const user = userData.data || userData;
               
+              // Pre-fill form with user data from database
               setForm({
                 email: user.email || "",
                 first_name: user.first_name || "",
@@ -104,10 +119,53 @@ export default function CheckoutPage() {
                 billing_city: user.billing_city || "",
                 billing_country: user.billing_country || "",
               });
+            } else {
+              // If API fails, try to get from localStorage as fallback
+              const userDataStr = localStorage.getItem(STORAGE_KEYS.USER_DATA);
+              if (userDataStr) {
+                try {
+                  const user = JSON.parse(userDataStr);
+                  setForm({
+                    email: user.email || "",
+                    first_name: user.first_name || "",
+                    last_name: user.last_name || "",
+                    phone: user.phone || "",
+                    billing_street: user.billing_street || "",
+                    billing_zip: user.billing_zip || "",
+                    billing_city: user.billing_city || "",
+                    billing_country: user.billing_country || "",
+                  });
+                } catch (parseErr) {
+                  console.error("Error parsing user data from localStorage:", parseErr);
+                }
+              }
             }
           } catch (err) {
             console.error("Error loading user data:", err);
+            // Fallback to localStorage if API call fails
+            const userDataStr = localStorage.getItem(STORAGE_KEYS.USER_DATA);
+            if (userDataStr) {
+              try {
+                const user = JSON.parse(userDataStr);
+                setForm({
+                  email: user.email || "",
+                  first_name: user.first_name || "",
+                  last_name: user.last_name || "",
+                  phone: user.phone || "",
+                  billing_street: user.billing_street || "",
+                  billing_zip: user.billing_zip || "",
+                  billing_city: user.billing_city || "",
+                  billing_country: user.billing_country || "",
+                });
+              } catch (parseErr) {
+                console.error("Error parsing user data from localStorage:", parseErr);
+              }
+            }
+          } finally {
+            setLoadingUser(false);
           }
+        } else {
+          setLoadingUser(false);
         }
       }
     };
@@ -120,8 +178,8 @@ export default function CheckoutPage() {
     0
   );
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Create invoice first, then show PayPal button
+  const createInvoice = async () => {
     setLoading(true);
     setError(null);
 
@@ -140,7 +198,6 @@ export default function CheckoutPage() {
 
       if (isAuthenticated && token) {
         // For authenticated users, use the authenticated endpoint
-        // The backend will use the user from the token
         const checkoutRes = await fetch(`${API_BASE}/checkout`, {
           method: "POST",
           headers: {
@@ -156,13 +213,11 @@ export default function CheckoutPage() {
         }
 
         const invoice = await checkoutRes.json();
-
-        // Clear cart
-        localStorage.removeItem(STORAGE_KEYS.CART);
-        setCart([]);
-
-        // Redirect to success page
-        router.push(`/checkout/success?id=${invoice.id || invoice.data?.id}`);
+        const invoiceId = invoice.id || invoice.data?.id;
+        setInvoiceId(invoiceId);
+        
+        // Load PayPal and create order
+        await loadPayPalAndCreateOrder(invoiceId);
       } else {
         // For guest checkout, include all form data
         checkoutData.first_name = form.first_name;
@@ -193,19 +248,151 @@ export default function CheckoutPage() {
         }
 
         const invoice = await checkoutRes.json();
-
-        // Clear cart
-        localStorage.removeItem(STORAGE_KEYS.CART);
-        setCart([]);
-
-        // Redirect to success page
-        router.push(`/checkout/success?id=${invoice.id || invoice.data?.id}`);
+        const invoiceId = invoice.id || invoice.data?.id;
+        setInvoiceId(invoiceId);
+        
+        // Load PayPal and create order
+        await loadPayPalAndCreateOrder(invoiceId);
       }
     } catch (err: any) {
       setError(err.message || "Checkout failed");
-    } finally {
       setLoading(false);
     }
+  };
+
+  // Load PayPal SDK and create order
+  const loadPayPalAndCreateOrder = async (invoiceId: number) => {
+    if (!PAYPAL_CLIENT_ID) {
+      setError("PayPal is not configured. Please contact support.");
+      setLoading(false);
+      return;
+    }
+
+    // Load PayPal SDK if not already loaded
+    if (!window.paypal) {
+      const script = document.createElement("script");
+      script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=EUR`;
+      script.async = true;
+      script.onload = () => {
+        setPaypalLoaded(true);
+        renderPayPalButton(invoiceId);
+      };
+      script.onerror = () => {
+        setError("Failed to load PayPal SDK");
+        setLoading(false);
+      };
+      document.body.appendChild(script);
+    } else {
+      setPaypalLoaded(true);
+      renderPayPalButton(invoiceId);
+    }
+  };
+
+  // Render PayPal button
+  const renderPayPalButton = async (invoiceId: number) => {
+    if (!window.paypal || !paypalButtonContainerRef.current) {
+      return;
+    }
+
+    // Clear previous button
+    if (paypalButtonContainerRef.current) {
+      paypalButtonContainerRef.current.innerHTML = "";
+    }
+
+    try {
+      window.paypal.Buttons({
+        createOrder: async () => {
+          // Create PayPal order on backend
+          const response = await fetch(`${API_BASE}/payments/paypal/create-order`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              invoice_id: invoiceId,
+              amount: total.toFixed(2),
+              currency: "EUR",
+              description: `Order #${invoiceId}`,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || "Failed to create PayPal order");
+          }
+
+          const data = await response.json();
+          const order = data.data || data;
+          return order.id;
+        },
+        onApprove: async (data: any) => {
+          setLoading(true);
+          try {
+            const token = typeof window !== "undefined" 
+              ? localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) 
+              : null;
+
+            // Get user_id if authenticated (optional - backend will get from invoice if not provided)
+            let userId = null;
+            if (isAuthenticated && token) {
+              const userDataStr = localStorage.getItem(STORAGE_KEYS.USER_DATA);
+              if (userDataStr) {
+                const user = JSON.parse(userDataStr);
+                userId = user.id;
+              }
+            }
+
+            // Capture payment (user_id is optional - backend will get from invoice)
+            const captureRes = await fetch(`${API_BASE}/payments/paypal/capture`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
+              body: JSON.stringify({
+                orderId: data.orderID,
+                invoice_id: invoiceId,
+                ...(userId ? { user_id: userId } : {}),
+              }),
+            });
+
+            if (!captureRes.ok) {
+              const errorData = await captureRes.json().catch(() => ({}));
+              throw new Error(errorData.message || "Payment capture failed");
+            }
+
+            // Clear cart
+            localStorage.removeItem(STORAGE_KEYS.CART);
+            setCart([]);
+
+            // Redirect to success page
+            router.push(`/checkout/success?id=${invoiceId}`);
+          } catch (err: any) {
+            setError(err.message || "Payment processing failed");
+            setLoading(false);
+          }
+        },
+        onError: (err: any) => {
+          console.error("PayPal error:", err);
+          setError("PayPal payment failed. Please try again.");
+          setLoading(false);
+        },
+        onCancel: () => {
+          setError("Payment was cancelled");
+          setLoading(false);
+        },
+      }).render(paypalButtonContainerRef.current);
+
+      setLoading(false);
+    } catch (err: any) {
+      setError(err.message || "Failed to initialize PayPal");
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await createInvoice();
   };
 
   return (
@@ -296,6 +483,14 @@ export default function CheckoutPage() {
                 <Alert severity="error" sx={{ mb: 2 }}>
                   {error}
                 </Alert>
+              )}
+              {loadingUser && isAuthenticated && (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+                  <CircularProgress size={20} />
+                  <Typography variant="body2" color="text.secondary">
+                    Loading your information...
+                  </Typography>
+                </Box>
               )}
               <form onSubmit={handleSubmit}>
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -450,16 +645,25 @@ export default function CheckoutPage() {
                   €{total.toFixed(2)}
                 </Typography>
               </Box>
-              <Button
-                fullWidth
-                variant="contained"
-                size="large"
-                onClick={handleSubmit}
-                disabled={loading}
-                sx={{ mt: 3, borderRadius: 999 }}
-              >
-                {loading ? "Processing..." : "Complete Order"}
-              </Button>
+              {!invoiceId ? (
+                <Button
+                  fullWidth
+                  variant="contained"
+                  size="large"
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  sx={{ mt: 3, borderRadius: 999 }}
+                >
+                  {loading ? "Processing..." : "Continue to Payment"}
+                </Button>
+              ) : (
+                <Box sx={{ mt: 3 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: "center" }}>
+                    Complete your payment with PayPal
+                  </Typography>
+                  <Box ref={paypalButtonContainerRef} id="paypal-button-container" />
+                </Box>
+              )}
             </Paper>
           </Box>
         </Box>

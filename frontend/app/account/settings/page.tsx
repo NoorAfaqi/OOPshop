@@ -27,6 +27,7 @@ export default function ProfileSettingsPage() {
     first_name: "",
     last_name: "",
     phone: "",
+    profile_picture_url: "",
     billing_street: "",
     billing_zip: "",
     billing_city: "",
@@ -60,6 +61,7 @@ export default function ProfileSettingsPage() {
             first_name: user.first_name || "",
             last_name: user.last_name || "",
             phone: user.phone || "",
+            profile_picture_url: user.profile_picture_url || "",
             billing_street: user.billing_street || "",
             billing_zip: user.billing_zip || "",
             billing_city: user.billing_city || "",
@@ -78,6 +80,7 @@ export default function ProfileSettingsPage() {
               first_name: parsedUser.first_name || "",
               last_name: parsedUser.last_name || "",
               phone: parsedUser.phone || "",
+              profile_picture_url: parsedUser.profile_picture_url || "",
               billing_street: parsedUser.billing_street || "",
               billing_zip: parsedUser.billing_zip || "",
               billing_city: parsedUser.billing_city || "",
@@ -256,6 +259,58 @@ export default function ProfileSettingsPage() {
                 }}
               />
             </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Profile Picture URL"
+                type="url"
+                value={form.profile_picture_url}
+                onChange={(e) => setForm({ ...form, profile_picture_url: e.target.value })}
+                placeholder="https://example.com/profile.jpg"
+                helperText="Enter a URL to your profile picture"
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                  },
+                }}
+              />
+            </Grid>
+            {form.profile_picture_url && (
+              <Grid item xs={12}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 2,
+                    p: 2,
+                    borderRadius: 2,
+                    bgcolor: "grey.50",
+                    border: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={form.profile_picture_url}
+                    alt="Profile preview"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                    sx={{
+                      width: 80,
+                      height: 80,
+                      borderRadius: 2,
+                      objectFit: "cover",
+                      border: "2px solid",
+                      borderColor: "divider",
+                    }}
+                  />
+                  <Typography variant="body2" color="text.secondary">
+                    Profile picture preview
+                  </Typography>
+                </Box>
+              </Grid>
+            )}
           </Grid>
 
           <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>

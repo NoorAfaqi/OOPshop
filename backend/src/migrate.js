@@ -20,6 +20,9 @@ async function runMigrations() {
         billing_city VARCHAR(100),
         billing_country VARCHAR(100),
         
+        -- Profile picture URL
+        profile_picture_url VARCHAR(500),
+        
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         
@@ -90,6 +93,32 @@ async function runMigrations() {
           ON DELETE RESTRICT
       )
     `);
+
+    // Add profile_picture_url column if it doesn't exist (for existing databases)
+    try {
+      const [columns] = await pool.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'users' 
+        AND COLUMN_NAME = 'profile_picture_url'
+      `);
+      
+      if (columns.length === 0) {
+        await pool.query(`
+          ALTER TABLE users 
+          ADD COLUMN profile_picture_url VARCHAR(500) AFTER billing_country
+        `);
+        console.log("✅ Added profile_picture_url column to users table");
+      }
+    } catch (err) {
+      // Column might already exist or other error
+      if (err.message.includes('Duplicate column name')) {
+        console.log("ℹ️  profile_picture_url column already exists");
+      } else {
+        console.warn("⚠️  Warning: Could not add profile_picture_url column:", err.message);
+      }
+    }
 
     console.log("✅ Migrations completed successfully.");
     console.log("📝 Single users table now handles all user types and customer billing info.");

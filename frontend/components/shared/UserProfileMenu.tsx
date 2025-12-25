@@ -24,6 +24,7 @@ interface User {
   last_name: string;
   email: string;
   role: string;
+  profile_picture_url?: string;
 }
 
 export default function UserProfileMenu() {
@@ -117,6 +118,7 @@ export default function UserProfileMenu() {
         }}
       >
         <Avatar
+          src={user.profile_picture_url || undefined}
           sx={{
             width: 36,
             height: 36,

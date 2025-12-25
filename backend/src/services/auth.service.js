@@ -132,7 +132,7 @@ class AuthService {
       const [rows] = await pool.query(
         `SELECT id, email, first_name, last_name, phone, role, is_active, 
          billing_street, billing_zip, billing_city, billing_country, 
-         created_at, updated_at FROM users WHERE id = ?`,
+         profile_picture_url, created_at, updated_at FROM users WHERE id = ?`,
         [id]
       );
       
@@ -236,7 +236,8 @@ class AuthService {
         'billing_street',
         'billing_zip',
         'billing_city',
-        'billing_country'
+        'billing_country',
+        'profile_picture_url'
       ];
       const updateFields = [];
       const values = [];

@@ -10,10 +10,20 @@ function auth(requiredRoles = null, required = true) {
     const header = req.headers.authorization || "";
     const token = header.startsWith("Bearer ") ? header.slice(7) : null;
 
+    // Debug logging (remove in production)
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[Auth Middleware] Path: ${req.path}, Required: ${required}, Has Token: ${!!token}`);
+    }
+
     if (!token) {
-      return required
-        ? res.status(401).json({ message: "No token provided" })
-        : next();
+      if (required) {
+        return res.status(401).json({ message: "No token provided" });
+      }
+      // Authentication is optional, continue without user
+      if (process.env.NODE_ENV === "development") {
+        console.log(`[Auth Middleware] Allowing request without token (optional auth)`);
+      }
+      return next();
     }
 
     try {
@@ -33,6 +43,10 @@ function auth(requiredRoles = null, required = true) {
       
       return next();
     } catch (err) {
+      // If authentication is optional and token is invalid, continue without user
+      if (!required) {
+        return next();
+      }
       return res.status(401).json({ message: "Invalid or expired token" });
     }
   };

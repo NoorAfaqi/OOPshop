@@ -118,7 +118,8 @@ app.use("/products", productRoutes);
 app.use("/users", authMiddleware(), userRoutes);
 app.use("/invoices", authMiddleware(), invoiceRoutes);
 app.use("/reports", authMiddleware(), reportsRoutes);
-app.use("/payments", authMiddleware(), paymentsRoutes);
+// Payments routes - mixed auth (some public, some protected - handled in routes file)
+app.use("/payments", paymentsRoutes);
 app.use("/account", authMiddleware(), accountRoutes);
 
 // 404 handler
