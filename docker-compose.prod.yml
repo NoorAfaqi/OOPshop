@@ -1,9 +1,12 @@
 services:
-  # MySQL Database
+  # MySQL Database (only used if DB_HOST is not set or equals 'mysql')
+  # If using remote database, this service won't be needed
   mysql:
     image: mysql:8.0
     container_name: oopshop-mysql-prod
     restart: always
+    profiles:
+      - local-db  # Only start when explicitly using local database
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-rootpassword}
       MYSQL_DATABASE: ${DB_NAME:-oopshop}
@@ -32,23 +35,31 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-      DB_HOST: mysql
-      DB_PORT: 3306
+      # Database configuration - reads from .env file
+      # If DB_HOST is set in .env, uses remote database
+      # If DB_HOST is not set, defaults to 'mysql' (local container)
+      DB_HOST: ${DB_HOST:-mysql}
+      DB_PORT: ${DB_PORT:-3306}
       DB_USER: ${DB_USER:-oopshop_user}
       DB_PASSWORD: ${DB_PASSWORD:-oopshop_password}
       DB_NAME: ${DB_NAME:-oopshop}
-      DB_CONNECTION_LIMIT: 10
+      DB_CONNECTION_LIMIT: ${DB_CONNECTION_LIMIT:-10}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      # Skip migrations if using remote database (set SKIP_MIGRATIONS=true in .env)
+      SKIP_MIGRATIONS: ${SKIP_MIGRATIONS:-false}
     ports:
       - "5000:5000"
     volumes:
       - backend_logs_prod:/app/logs
-    depends_on:
-      mysql:
-        condition: service_healthy
+    # Note: depends_on removed - entrypoint script handles database connection
+    # For local database, start with: docker compose -f docker-compose.prod.yml --profile local-db up
+    # For remote database, just set DB_HOST in .env and run: docker compose -f docker-compose.prod.yml up
     networks:
       - oopshop-network-prod
+    # Add extra_hosts for remote database access if needed
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
       interval: 30s

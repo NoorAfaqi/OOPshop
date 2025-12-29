@@ -147,7 +147,7 @@ export default function StockHistory({ productId }: StockHistoryProps) {
                   </Typography>
                 </TableCell>
                 <TableCell align="right">{entry.previous_quantity}</TableCell>
-                <TableCell align="right" fontWeight={600}>
+                <TableCell align="right" sx={{ fontWeight: 600 }}>
                   {entry.new_quantity}
                 </TableCell>
                 <TableCell>
