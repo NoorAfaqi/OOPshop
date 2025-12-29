@@ -34,7 +34,7 @@ interface Invoice {
   id: number;
   user_id: number;
   total_amount: number;
-  status: "pending" | "paid" | "cancelled";
+  status: "pending" | "paid" | "cancelled" | "shipped";
   created_at: string;
   first_name?: string;
   last_name?: string;
@@ -117,13 +117,13 @@ export default function InvoiceDetailsPage() {
       </Typography>
 
       <Grid container spacing={2}>
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card sx={{ p: 3 }}>
             <Typography variant="h6" mb={2}>
               Customer Information
             </Typography>
             <Grid container spacing={2}>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Typography variant="body2" color="text.secondary">
                   Name
                 </Typography>
@@ -134,7 +134,7 @@ export default function InvoiceDetailsPage() {
                 </Typography>
               </Grid>
               {invoice.email && (
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <Typography variant="body2" color="text.secondary">
                     Email
                   </Typography>
@@ -144,7 +144,7 @@ export default function InvoiceDetailsPage() {
                 </Grid>
               )}
               {invoice.phone && (
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <Typography variant="body2" color="text.secondary">
                     Phone
                   </Typography>
@@ -154,7 +154,7 @@ export default function InvoiceDetailsPage() {
                 </Grid>
               )}
               {(invoice.billing_street || invoice.billing_city) && (
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <Typography variant="body2" color="text.secondary">
                     Billing Address
                   </Typography>
@@ -171,13 +171,13 @@ export default function InvoiceDetailsPage() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card sx={{ p: 3 }}>
             <Typography variant="h6" mb={2}>
               Invoice Details
             </Typography>
             <Grid container spacing={2}>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Typography variant="body2" color="text.secondary">
                   Invoice ID
                 </Typography>
@@ -185,7 +185,7 @@ export default function InvoiceDetailsPage() {
                   #{invoice.id}
                 </Typography>
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Typography variant="body2" color="text.secondary">
                   Date
                 </Typography>
@@ -193,7 +193,7 @@ export default function InvoiceDetailsPage() {
                   {new Date(invoice.created_at).toLocaleString()}
                 </Typography>
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Typography variant="body2" color="text.secondary">
                   Status
                 </Typography>
@@ -203,13 +203,15 @@ export default function InvoiceDetailsPage() {
                   color={
                     invoice.status === "paid"
                       ? "success"
+                      : invoice.status === "shipped"
+                      ? "info"
                       : invoice.status === "pending"
                       ? "warning"
                       : "default"
                   }
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Typography variant="body2" color="text.secondary">
                   Total Amount
                 </Typography>
@@ -221,7 +223,7 @@ export default function InvoiceDetailsPage() {
           </Card>
         </Grid>
 
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" mb={2}>
               Items

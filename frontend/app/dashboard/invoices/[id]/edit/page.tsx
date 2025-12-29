@@ -25,7 +25,7 @@ export default function EditInvoicePage() {
   const [loading, setLoading] = useState(false);
   const [loadingInvoice, setLoadingInvoice] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<"pending" | "paid" | "cancelled">("pending");
+  const [status, setStatus] = useState<"pending" | "paid" | "cancelled" | "shipped">("pending");
 
   const token =
     typeof window !== "undefined"
@@ -114,22 +114,23 @@ export default function EditInvoicePage() {
 
         <form onSubmit={handleSubmit}>
           <Grid container spacing={2}>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 label="Status"
                 select
                 fullWidth
                 value={status}
                 onChange={(e) =>
-                  setStatus(e.target.value as "pending" | "paid" | "cancelled")
+                  setStatus(e.target.value as "pending" | "paid" | "cancelled" | "shipped")
                 }
               >
                 <MenuItem value="pending">Pending</MenuItem>
                 <MenuItem value="paid">Paid</MenuItem>
+                <MenuItem value="shipped">Shipped</MenuItem>
                 <MenuItem value="cancelled">Cancelled</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
                 <Button
                   variant="outlined"

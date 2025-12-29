@@ -148,13 +148,13 @@ export default function UserDetailsPage() {
       </Typography>
 
       <Grid container spacing={2}>
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card sx={{ p: 3 }}>
             <Typography variant="h6" mb={2}>
               Profile Information
             </Typography>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Typography variant="body2" color="text.secondary">
                   First Name
                 </Typography>
@@ -162,7 +162,7 @@ export default function UserDetailsPage() {
                   {user.first_name}
                 </Typography>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Typography variant="body2" color="text.secondary">
                   Last Name
                 </Typography>
@@ -170,7 +170,7 @@ export default function UserDetailsPage() {
                   {user.last_name}
                 </Typography>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Typography variant="body2" color="text.secondary">
                   Email
                 </Typography>
@@ -178,7 +178,7 @@ export default function UserDetailsPage() {
                   {user.email || "—"}
                 </Typography>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Typography variant="body2" color="text.secondary">
                   Phone
                 </Typography>
@@ -186,7 +186,7 @@ export default function UserDetailsPage() {
                   {user.phone || "—"}
                 </Typography>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Typography variant="body2" color="text.secondary">
                   Role
                 </Typography>
@@ -202,7 +202,7 @@ export default function UserDetailsPage() {
                   }
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Typography variant="body2" color="text.secondary">
                   Status
                 </Typography>
@@ -212,7 +212,7 @@ export default function UserDetailsPage() {
                   color={user.is_active ? "success" : "default"}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Typography variant="body2" color="text.secondary">
                   Created
                 </Typography>
@@ -224,7 +224,7 @@ export default function UserDetailsPage() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card sx={{ p: 3 }}>
             <Typography variant="h6" mb={2}>
               Billing Address
@@ -247,7 +247,7 @@ export default function UserDetailsPage() {
           </Card>
         </Grid>
 
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" mb={2}>
               Purchase History
@@ -282,6 +282,8 @@ export default function UserDetailsPage() {
                           color={
                             invoice.status === "paid"
                               ? "success"
+                              : invoice.status === "shipped"
+                              ? "info"
                               : invoice.status === "pending"
                               ? "warning"
                               : "default"
@@ -310,7 +312,7 @@ export default function UserDetailsPage() {
           </Paper>
         </Grid>
 
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" mb={2}>
               Payment History

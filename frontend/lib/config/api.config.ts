@@ -19,6 +19,9 @@ export const API_ENDPOINTS = {
   PRODUCTS: "/products",
   PRODUCT_BY_ID: (id: number) => `/products/${id}`,
   PRODUCT_FROM_BARCODE: "/products/from-barcode",
+  PRODUCT_SEARCH: "/products/search",
+  PRODUCT_LOW_STOCK: "/products/low-stock",
+  PRODUCT_OUT_OF_STOCK: "/products/out-of-stock",
   
   // Checkout
   CHECKOUT: "/checkout",

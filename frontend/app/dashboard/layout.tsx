@@ -23,6 +23,8 @@ import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import InsightsIcon from "@mui/icons-material/Insights";
 import PaymentIcon from "@mui/icons-material/Payment";
+import FileUploadIcon from "@mui/icons-material/FileUpload";
+import WarningIcon from "@mui/icons-material/Warning";
 import UserProfileMenu from "@/components/shared/UserProfileMenu";
 import StoreIcon from "@mui/icons-material/Store";
 import { usePathname, useRouter } from "next/navigation";
@@ -33,6 +35,8 @@ const drawerWidth = 260;
 const navItems = [
   { label: "Overview", icon: DashboardIcon, href: "/dashboard" },
   { label: "Products", icon: Inventory2Icon, href: "/dashboard/products" },
+  { label: "Import Product", icon: FileUploadIcon, href: "/dashboard/import-product" },
+  { label: "Inventory", icon: WarningIcon, href: "/dashboard/inventory" },
   { label: "Users", icon: PeopleAltIcon, href: "/dashboard/users" },
   { label: "Invoices", icon: ReceiptLongIcon, href: "/dashboard/invoices" },
   { label: "Reports", icon: InsightsIcon, href: "/dashboard/reports" },

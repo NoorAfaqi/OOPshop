@@ -37,7 +37,7 @@ interface Invoice {
   id: number;
   user_id: number;
   total_amount: number;
-  status: "pending" | "paid" | "cancelled";
+  status: "pending" | "paid" | "cancelled" | "shipped";
   created_at: string;
   first_name?: string;
   last_name?: string;
@@ -146,7 +146,7 @@ export default function OrderDetailPage() {
         </Typography>
 
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Card
               elevation={0}
               sx={{
@@ -181,12 +181,16 @@ export default function OrderDetailPage() {
                       bgcolor:
                         invoice.status === "paid"
                           ? alpha("#4caf50", 0.1)
+                          : invoice.status === "shipped"
+                          ? alpha("#2196f3", 0.1)
                           : invoice.status === "pending"
                           ? alpha("#ff9800", 0.1)
                           : alpha("#f44336", 0.1),
                       color:
                         invoice.status === "paid"
                           ? "#4caf50"
+                          : invoice.status === "shipped"
+                          ? "#2196f3"
                           : invoice.status === "pending"
                           ? "#ff9800"
                           : "#f44336",
@@ -236,7 +240,7 @@ export default function OrderDetailPage() {
             )}
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Paper
               elevation={0}
               sx={{

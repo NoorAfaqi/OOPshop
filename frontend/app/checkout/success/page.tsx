@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { Box, Button, Container, Paper, Typography, AppBar, Toolbar, alpha, Card, Grid } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import StoreIcon from "@mui/icons-material/Store";
@@ -9,7 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const invoiceId = searchParams.get("id");
@@ -119,7 +119,7 @@ export default function CheckoutSuccessPage() {
               }}
             >
               <Grid container spacing={2}>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <Typography variant="body2" color="text.secondary">
                     Total Amount
                   </Typography>
@@ -127,7 +127,7 @@ export default function CheckoutSuccessPage() {
                     €{Number(invoice.total_amount).toFixed(2)}
                   </Typography>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={{ xs: 6 }}>
                   <Typography variant="body2" color="text.secondary">
                     Order Date
                   </Typography>
@@ -182,6 +182,18 @@ export default function CheckoutSuccessPage() {
         </Paper>
       </Container>
     </Box>
+  );
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={
+      <Box sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Typography>Loading...</Typography>
+      </Box>
+    }>
+      <CheckoutSuccessContent />
+    </Suspense>
   );
 }
 

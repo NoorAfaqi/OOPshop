@@ -186,7 +186,7 @@ export default function EditProfilePage() {
 
           <form onSubmit={handleSubmit}>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   label="First Name"
                   required
@@ -197,7 +197,7 @@ export default function EditProfilePage() {
                   }
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   label="Last Name"
                   required
@@ -208,7 +208,7 @@ export default function EditProfilePage() {
                   }
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   label="Phone"
                   fullWidth
@@ -216,12 +216,12 @@ export default function EditProfilePage() {
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
                   Billing Address
                 </Typography>
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   label="Street Address"
                   fullWidth
@@ -231,7 +231,7 @@ export default function EditProfilePage() {
                   }
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   label="ZIP Code"
                   fullWidth
@@ -241,7 +241,7 @@ export default function EditProfilePage() {
                   }
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   label="City"
                   fullWidth
@@ -251,7 +251,7 @@ export default function EditProfilePage() {
                   }
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   label="Country"
                   fullWidth
@@ -261,7 +261,7 @@ export default function EditProfilePage() {
                   }
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
                   <Button
                     variant="outlined"

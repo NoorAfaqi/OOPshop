@@ -184,7 +184,7 @@ export default function EditProductPage() {
           </Box>
 
           <Grid container spacing={2}>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 label="Name"
                 required
@@ -193,7 +193,7 @@ export default function EditProductPage() {
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 label="Brand"
                 fullWidth
@@ -201,7 +201,7 @@ export default function EditProductPage() {
                 onChange={(e) => setForm({ ...form, brand: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 label="Category"
                 fullWidth
@@ -211,7 +211,7 @@ export default function EditProductPage() {
                 }
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 label="Price"
                 type="number"
@@ -222,7 +222,7 @@ export default function EditProductPage() {
                 inputProps={{ step: "0.01", min: "0" }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 label="Stock Quantity"
                 type="number"
@@ -234,7 +234,7 @@ export default function EditProductPage() {
                 inputProps={{ min: "0" }}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 label="Image URL"
                 fullWidth
@@ -244,7 +244,7 @@ export default function EditProductPage() {
                 }
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
                 <Button
                   variant="outlined"

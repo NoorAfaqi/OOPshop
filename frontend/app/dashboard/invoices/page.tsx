@@ -29,6 +29,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import SortIcon from "@mui/icons-material/Sort";
+import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import { useRouter } from "next/navigation";
 import { STORAGE_KEYS } from "@/lib/config/api.config";
 
@@ -38,7 +39,7 @@ interface Invoice {
   id: number;
   user_id: number;
   total_amount: number;
-  status: "pending" | "paid" | "cancelled";
+  status: "pending" | "paid" | "cancelled" | "shipped";
   created_at: string;
   first_name?: string;
   last_name?: string;
@@ -66,10 +67,17 @@ export default function InvoicesPage() {
       const res = await fetch(`${API_BASE}/invoices`, {
         headers: {
           Authorization: token ? `Bearer ${token}` : "",
+          "Content-Type": "application/json",
         },
       });
       if (!res.ok) {
-        throw new Error("Failed to load invoices");
+        const errorData = await res.json().catch(() => ({ message: "Unknown error" }));
+        console.error("Invoice API Error:", {
+          status: res.status,
+          statusText: res.statusText,
+          error: errorData,
+        });
+        throw new Error(errorData.message || `Failed to load invoices: ${res.status} ${res.statusText}`);
       }
       const data = await res.json();
       const invoicesList = Array.isArray(data) ? data : data.data || [];
@@ -126,6 +134,27 @@ export default function InvoicesPage() {
     } catch (err) {
       console.error("Error deleting invoice:", err);
       alert("Failed to delete invoice");
+    }
+  };
+
+  const handleStatusUpdate = async (id: number, newStatus: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/invoices/${id}`, {
+        method: "PUT",
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Unknown error" }));
+        throw new Error(errorData.message || "Failed to update invoice status");
+      }
+      await loadInvoices();
+    } catch (err) {
+      console.error("Error updating invoice status:", err);
+      alert(err instanceof Error ? err.message : "Failed to update invoice status");
     }
   };
 
@@ -188,6 +217,7 @@ export default function InvoicesPage() {
               <MenuItem value="all">All Status</MenuItem>
               <MenuItem value="pending">Pending</MenuItem>
               <MenuItem value="paid">Paid</MenuItem>
+              <MenuItem value="shipped">Shipped</MenuItem>
               <MenuItem value="cancelled">Cancelled</MenuItem>
             </Select>
           </FormControl>
@@ -281,6 +311,8 @@ export default function InvoicesPage() {
                         color={
                           invoice.status === "paid"
                             ? "success"
+                            : invoice.status === "shipped"
+                            ? "info"
                             : invoice.status === "pending"
                             ? "warning"
                             : "default"
@@ -297,9 +329,23 @@ export default function InvoicesPage() {
                             color: "primary.main",
                             "&:hover": { bgcolor: alpha("#667eea", 0.1) },
                           }}
+                          title="View invoice"
                         >
                           <VisibilityIcon fontSize="small" />
                         </IconButton>
+                        {invoice.status === "paid" && (
+                          <IconButton
+                            size="small"
+                            onClick={() => handleStatusUpdate(invoice.id, "shipped")}
+                            sx={{
+                              color: "info.main",
+                              "&:hover": { bgcolor: alpha("#2196f3", 0.1) },
+                            }}
+                            title="Mark as shipped"
+                          >
+                            <LocalShippingIcon fontSize="small" />
+                          </IconButton>
+                        )}
                         <IconButton
                           size="small"
                           onClick={() => router.push(`/dashboard/invoices/${invoice.id}/edit`)}
@@ -307,6 +353,7 @@ export default function InvoicesPage() {
                             color: "text.secondary",
                             "&:hover": { bgcolor: alpha("#000", 0.05) },
                           }}
+                          title="Edit invoice"
                         >
                           <EditIcon fontSize="small" />
                         </IconButton>
@@ -317,6 +364,7 @@ export default function InvoicesPage() {
                             color: "error.main",
                             "&:hover": { bgcolor: alpha("#f5576c", 0.1) },
                           }}
+                          title="Delete invoice"
                         >
                           <DeleteIcon fontSize="small" />
                         </IconButton>

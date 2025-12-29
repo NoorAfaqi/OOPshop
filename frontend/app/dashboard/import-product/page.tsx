@@ -11,10 +11,15 @@ import {
   Button,
   Divider,
   Alert,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
+import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
+import SearchIcon from '@mui/icons-material/Search';
 import BarcodeSearch from '@/components/barcode/BarcodeSearch';
+import ProductNameSearch from '@/components/barcode/ProductNameSearch';
 import ProductPreview from '@/components/barcode/ProductPreview';
 import { productService } from '@/lib/services/product.service';
 import { useRouter } from 'next/navigation';
@@ -27,6 +32,7 @@ export default function ImportProductPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [searchTab, setSearchTab] = useState(0);
 
   const handleProductFound = (data: any) => {
     setProductData(data);
@@ -93,21 +99,34 @@ export default function ImportProductPage() {
       </Typography>
 
       <Typography variant="body1" color="text.secondary" paragraph>
-        Search for products by barcode to automatically import product details,
+        Search for products by barcode or name to automatically import product details,
         nutritional information, and images from the OpenFoodFacts database.
       </Typography>
 
       <Grid container spacing={3} sx={{ mt: 2 }}>
         {/* Left Column: Search */}
-        <Grid item xs={12} md={5}>
+        <Grid size={{ xs: 12, md: 5 }}>
           <Paper elevation={2} sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
               Step 1: Search Product
             </Typography>
-            <BarcodeSearch
-              onProductFound={handleProductFound}
-              onError={setError}
-            />
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+              <Tabs value={searchTab} onChange={(e, v) => setSearchTab(v)}>
+                <Tab icon={<QrCodeScannerIcon />} label="Barcode" />
+                <Tab icon={<SearchIcon />} label="Name" />
+              </Tabs>
+            </Box>
+            {searchTab === 0 ? (
+              <BarcodeSearch
+                onProductFound={handleProductFound}
+                onError={setError}
+              />
+            ) : (
+              <ProductNameSearch
+                onProductSelected={handleProductFound}
+                onError={setError}
+              />
+            )}
           </Paper>
 
           {/* Price and Stock Form */}
@@ -180,7 +199,7 @@ export default function ImportProductPage() {
         </Grid>
 
         {/* Right Column: Preview */}
-        <Grid item xs={12} md={7}>
+        <Grid size={{ xs: 12, md: 7 }}>
           {productData ? (
             <>
               <Typography variant="h6" gutterBottom>
@@ -217,21 +236,20 @@ export default function ImportProductPage() {
         </Typography>
         <ul>
           <li>
-            Enter the barcode number found on the product packaging (typically
-            8-13 digits)
+            <strong>Barcode Search:</strong> Enter the barcode number found on the product packaging (typically 8-13 digits)
           </li>
           <li>
-            If a product isn't found, you can add it manually to OpenFoodFacts
-            first
+            <strong>Name Search:</strong> Search by product name to find multiple matching products, then select the correct one
+          </li>
+          <li>
+            If a product isn't found, you can add it manually to OpenFoodFacts first
           </li>
           <li>Review all imported data before saving</li>
           <li>
-            Nutritional information is automatically imported and displayed to
-            customers
+            Nutritional information is automatically imported and displayed to customers
           </li>
           <li>
-            Product images are linked from OpenFoodFacts and updated
-            automatically
+            Product images are linked from OpenFoodFacts and updated automatically
           </li>
         </ul>
       </Paper>

@@ -47,9 +47,22 @@ const { asyncHandler } = require("../middleware/errorHandler");
  *                     $ref: '#/components/schemas/Product'
  */
 const getAllProducts = asyncHandler(async (req, res) => {
-  const products = await productService.getAllProducts(req.query);
-  // Return simple array for frontend compatibility
-  return res.json(products);
+  const result = await productService.getAllProducts(req.query);
+  
+  // Always return paginated response format
+  if (result.pagination) {
+    const { paginatedResponse } = require("../utils/response");
+    return paginatedResponse(
+      res,
+      result.data,
+      result.pagination.page,
+      result.pagination.limit,
+      result.pagination.total
+    );
+  }
+  
+  // Fallback for backward compatibility
+  return res.json(result.data || result);
 });
 
 /**
@@ -246,6 +259,154 @@ const fetchFromBarcode = asyncHandler(async (req, res) => {
   successResponse(res, result, "Product fetched from Open Food Facts");
 });
 
+/**
+ * @swagger
+ * /products/search:
+ *   post:
+ *     tags: [Products]
+ *     summary: Search products from Open Food Facts
+ *     description: Search products from Open Food Facts by name (requires authentication)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - searchTerm
+ *             properties:
+ *               searchTerm:
+ *                 type: string
+ *                 example: "Nutella"
+ *               limit:
+ *                 type: integer
+ *                 example: 20
+ *     responses:
+ *       200:
+ *         description: List of products from Open Food Facts
+ */
+const searchProductsByName = asyncHandler(async (req, res) => {
+  const { searchTerm, limit } = req.body;
+  const result = await productService.searchProductsByName(searchTerm, limit);
+  successResponse(res, result, "Products searched from Open Food Facts");
+});
+
+/**
+ * @swagger
+ * /products/{id}/adjust-stock:
+ *   post:
+ *     tags: [Products]
+ *     summary: Adjust product stock
+ *     description: Adjust stock quantity with history tracking (requires authentication)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - quantity_change
+ *             properties:
+ *               quantity_change:
+ *                 type: integer
+ *               change_type:
+ *                 type: string
+ *                 enum: [purchase, adjustment, return, damage, other]
+ *               reason:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Stock adjusted successfully
+ */
+const adjustStock = asyncHandler(async (req, res) => {
+  const product = await productService.adjustStock(req.params.id, {
+    ...req.body,
+    user_id: req.user.id,
+  });
+  successResponse(res, product, "Stock adjusted successfully");
+});
+
+/**
+ * @swagger
+ * /products/{id}/stock-history:
+ *   get:
+ *     tags: [Products]
+ *     summary: Get stock history for a product
+ *     description: Get stock movement history (requires authentication)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *     responses:
+ *       200:
+ *         description: Stock history
+ */
+const getStockHistory = asyncHandler(async (req, res) => {
+  const history = await productService.getStockHistory(req.params.id, parseInt(req.query.limit) || 50);
+  successResponse(res, history, "Stock history fetched successfully");
+});
+
+/**
+ * @swagger
+ * /products/low-stock:
+ *   get:
+ *     tags: [Products]
+ *     summary: Get low stock products
+ *     description: Get products with stock below reorder point (requires authentication)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: threshold
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Low stock products
+ */
+const getLowStockProducts = asyncHandler(async (req, res) => {
+  const threshold = req.query.threshold ? parseInt(req.query.threshold) : null;
+  const products = await productService.getLowStockProducts(threshold);
+  successResponse(res, products, "Low stock products fetched successfully");
+});
+
+/**
+ * @swagger
+ * /products/out-of-stock:
+ *   get:
+ *     tags: [Products]
+ *     summary: Get out of stock products
+ *     description: Get products with zero stock (requires authentication)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Out of stock products
+ */
+const getOutOfStockProducts = asyncHandler(async (req, res) => {
+  const products = await productService.getOutOfStockProducts();
+  successResponse(res, products, "Out of stock products fetched successfully");
+});
+
 module.exports = {
   getAllProducts,
   getProductById,
@@ -253,5 +414,10 @@ module.exports = {
   updateProduct,
   deleteProduct,
   fetchFromBarcode,
+  searchProductsByName,
+  adjustStock,
+  getStockHistory,
+  getLowStockProducts,
+  getOutOfStockProducts,
 };
 

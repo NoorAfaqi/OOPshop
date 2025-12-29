@@ -67,7 +67,7 @@ export interface Invoice {
   id: number;
   user_id: number; // Changed from customer_id
   total_amount: number;
-  status: "pending" | "paid" | "cancelled";
+  status: "pending" | "paid" | "cancelled" | "shipped";
   created_at: string;
   first_name?: string;
   last_name?: string;

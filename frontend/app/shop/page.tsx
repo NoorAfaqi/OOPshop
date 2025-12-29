@@ -19,6 +19,10 @@ import {
   alpha,
   CircularProgress,
   MenuItem,
+  Pagination,
+  Select,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
@@ -49,7 +53,6 @@ interface CartItem {
 export default function ShopPage() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -59,9 +62,14 @@ export default function ShopPage() {
   const [mounted, setMounted] = useState(false);
   const [isCartLoaded, setIsCartLoaded] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  const categories = Array.from(new Set(allProducts.map(p => p.category).filter(Boolean))) as string[];
-  const brands = Array.from(new Set(allProducts.map(p => p.brand).filter(Boolean))) as string[];
+  
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(12);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [brands, setBrands] = useState<string[]>([]);
 
   const loadCart = () => {
     if (typeof window !== "undefined") {
@@ -128,47 +136,74 @@ export default function ShopPage() {
     try {
       const params = new URLSearchParams();
       if (search) params.set("q", search);
+      if (selectedCategory !== "all") params.set("category", selectedCategory);
+      if (selectedBrand !== "all") params.set("brand", selectedBrand);
       params.set("available", "true");
+      params.set("page", page.toString());
+      params.set("limit", limit.toString());
+      
       const res = await fetch(`${API_BASE}/products?${params.toString()}`);
       if (!res.ok) {
         throw new Error(`Failed to fetch products: ${res.status} ${res.statusText}`);
       }
       const data = await res.json();
-      setAllProducts(data);
-      filterProducts(data);
+      
+      // Handle both paginated and non-paginated responses
+      if (data.pagination) {
+        setProducts(data.data || []);
+        setTotal(data.pagination.total);
+        setTotalPages(data.pagination.pages);
+      } else if (Array.isArray(data)) {
+        setProducts(data);
+        setTotal(data.length);
+        setTotalPages(1);
+      } else if (data.data) {
+        setProducts(Array.isArray(data.data) ? data.data : []);
+        setTotal(data.pagination?.total || data.data.length);
+        setTotalPages(data.pagination?.pages || 1);
+      } else {
+        setProducts([]);
+        setTotal(0);
+        setTotalPages(0);
+      }
+      
+      // Load categories and brands separately for filters
+      loadCategoriesAndBrands();
     } catch (error: any) {
       console.error("Error loading products:", error);
       setError(error.message || "Failed to load products. Please ensure the backend server is running.");
       setProducts([]);
-      setAllProducts([]);
+      setTotal(0);
+      setTotalPages(0);
     } finally {
       setLoading(false);
     }
   };
 
-  const filterProducts = (productList: Product[]) => {
-    let filtered = productList;
-    
-    if (selectedCategory !== "all") {
-      filtered = filtered.filter(p => p.category === selectedCategory);
+  const loadCategoriesAndBrands = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/products?available=true&limit=1000`);
+      if (res.ok) {
+        const data = await res.json();
+        const productList = Array.isArray(data) ? data : (data.data || []);
+        const uniqueCategories = Array.from(new Set(productList.map((p: Product) => p.category).filter(Boolean))) as string[];
+        const uniqueBrands = Array.from(new Set(productList.map((p: Product) => p.brand).filter(Boolean))) as string[];
+        setCategories(uniqueCategories);
+        setBrands(uniqueBrands);
+      }
+    } catch (error) {
+      console.error("Error loading categories and brands:", error);
     }
-    
-    if (selectedBrand !== "all") {
-      filtered = filtered.filter(p => p.brand === selectedBrand);
-    }
-    
-    setProducts(filtered);
   };
+
+  useEffect(() => {
+    setPage(1); // Reset to first page when filters change
+  }, [search, selectedCategory, selectedBrand]);
 
   useEffect(() => {
     loadProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
-
-  useEffect(() => {
-    filterProducts(allProducts);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategory, selectedBrand]);
+  }, [page, limit, search, selectedCategory, selectedBrand]);
 
   const addToCart = (product: Product) => {
     setCart((prev) => {
@@ -633,8 +668,67 @@ export default function ShopPage() {
                   No products found
                 </Typography>
                 <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  Try adjusting your search
+                  Try adjusting your search or filters
                 </Typography>
+              </Box>
+            )}
+
+            {/* Pagination */}
+            {!loading && products.length > 0 && totalPages > 1 && (
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  mt: 6,
+                  flexWrap: "wrap",
+                  gap: 2,
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                    Showing {((page - 1) * limit) + 1} - {Math.min(page * limit, total)} of {total} products
+                  </Typography>
+                  <FormControl size="small" sx={{ minWidth: 120 }}>
+                    <InputLabel>Per Page</InputLabel>
+                    <Select
+                      value={limit}
+                      label="Per Page"
+                      onChange={(e) => {
+                        setLimit(Number(e.target.value));
+                        setPage(1);
+                      }}
+                    >
+                      <MenuItem value={12}>12</MenuItem>
+                      <MenuItem value={24}>24</MenuItem>
+                      <MenuItem value={48}>48</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+                <Pagination
+                  count={totalPages}
+                  page={page}
+                  onChange={(_, value) => {
+                    setPage(value);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  color="primary"
+                  size="large"
+                  showFirstButton
+                  showLastButton
+                  sx={{
+                    "& .MuiPaginationItem-root": {
+                      fontSize: "1rem",
+                    },
+                    "& .Mui-selected": {
+                      bgcolor: "#667eea",
+                      color: "white",
+                      "&:hover": {
+                        bgcolor: "#5568d3",
+                      },
+                    },
+                  }}
+                />
               </Box>
             )}
           </>

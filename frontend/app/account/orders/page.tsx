@@ -163,12 +163,16 @@ export default function OrderHistoryPage() {
                         bgcolor:
                           invoice.status === "paid"
                             ? alpha("#4caf50", 0.1)
+                            : invoice.status === "shipped"
+                            ? alpha("#2196f3", 0.1)
                             : invoice.status === "pending"
                             ? alpha("#ff9800", 0.1)
                             : alpha("#f44336", 0.1),
                         color:
                           invoice.status === "paid"
                             ? "#4caf50"
+                            : invoice.status === "shipped"
+                            ? "#2196f3"
                             : invoice.status === "pending"
                             ? "#ff9800"
                             : "#f44336",

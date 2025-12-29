@@ -12,13 +12,10 @@ const getAllInvoices = asyncHandler(async (req, res) => {
   if (req.user.role === 'customer') {
     const db = require("../config/database");
     const [invoices] = await db.query(
-      `SELECT i.*, 
-        GROUP_CONCAT(CONCAT(p.name, ' x', ii.quantity) SEPARATOR ', ') AS items
+      `SELECT i.*, u.first_name, u.last_name, u.email
        FROM invoices i
-       LEFT JOIN invoice_items ii ON ii.invoice_id = i.id
-       LEFT JOIN products p ON p.id = ii.product_id
+       JOIN users u ON u.id = i.user_id
        WHERE i.user_id = ?
-       GROUP BY i.id
        ORDER BY i.created_at DESC`,
       [req.user.id]
     );

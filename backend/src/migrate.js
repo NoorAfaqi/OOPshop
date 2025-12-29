@@ -51,7 +51,7 @@ async function runMigrations() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL,
         total_amount DECIMAL(10,2) NOT NULL,
-        status ENUM('pending','paid','cancelled') DEFAULT 'pending',
+        status ENUM('pending','paid','cancelled','shipped') DEFAULT 'pending',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT fk_invoices_user
           FOREIGN KEY (user_id) REFERENCES users(id)
@@ -120,8 +120,61 @@ async function runMigrations() {
       }
     }
 
+    // Inventory Management: Add reorder_point column to products table
+    try {
+      const [reorderColumns] = await pool.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'products' 
+        AND COLUMN_NAME = 'reorder_point'
+      `);
+      
+      if (reorderColumns.length === 0) {
+        await pool.query(`
+          ALTER TABLE products 
+          ADD COLUMN reorder_point INT DEFAULT 10 AFTER stock_quantity
+        `);
+        console.log("✅ Added reorder_point column to products table");
+      }
+    } catch (err) {
+      if (err.message.includes('Duplicate column name')) {
+        console.log("ℹ️  reorder_point column already exists");
+      } else {
+        console.warn("⚠️  Warning: Could not add reorder_point column:", err.message);
+      }
+    }
+
+    // Inventory Management: Create stock_history table for audit trail
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS stock_history (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        product_id INT NOT NULL,
+        user_id INT,
+        change_type ENUM('sale', 'purchase', 'adjustment', 'return', 'damage', 'other') NOT NULL,
+        quantity_change INT NOT NULL,
+        previous_quantity INT NOT NULL,
+        new_quantity INT NOT NULL,
+        reason VARCHAR(500),
+        reference_type VARCHAR(50),
+        reference_id INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_stock_history_product
+          FOREIGN KEY (product_id) REFERENCES products(id)
+          ON DELETE CASCADE,
+        CONSTRAINT fk_stock_history_user
+          FOREIGN KEY (user_id) REFERENCES users(id)
+          ON DELETE SET NULL,
+        INDEX idx_product_id (product_id),
+        INDEX idx_created_at (created_at),
+        INDEX idx_change_type (change_type)
+      )
+    `);
+    console.log("✅ Created stock_history table for inventory management");
+
     console.log("✅ Migrations completed successfully.");
     console.log("📝 Single users table now handles all user types and customer billing info.");
+    console.log("📦 Inventory management system (stock history & reorder points) is ready.");
   } catch (err) {
     console.error("❌ Migration error:", err);
     process.exitCode = 1;

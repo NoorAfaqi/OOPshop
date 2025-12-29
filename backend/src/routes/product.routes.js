@@ -8,6 +8,8 @@ const {
   getProductValidator,
   listProductsValidator,
   barcodeValidator,
+  searchValidator,
+  stockAdjustmentValidator,
 } = require("../validators/product.validator");
 
 const router = express.Router();
@@ -20,13 +22,6 @@ router.get(
   productController.getAllProducts
 );
 
-router.get(
-  "/:id",
-  getProductValidator,
-  validate,
-  productController.getProductById
-);
-
 // Protected routes (require authentication)
 router.post(
   "/",
@@ -36,12 +31,58 @@ router.post(
   productController.createProduct
 );
 
+// Specific routes MUST come before parameterized routes (/:id)
 router.post(
   "/from-barcode",
   authMiddleware(),
   barcodeValidator,
   validate,
   productController.fetchFromBarcode
+);
+
+router.post(
+  "/search",
+  authMiddleware(),
+  searchValidator,
+  validate,
+  productController.searchProductsByName
+);
+
+// Inventory management routes (MUST come before /:id routes)
+router.get(
+  "/low-stock",
+  authMiddleware(),
+  productController.getLowStockProducts
+);
+
+router.get(
+  "/out-of-stock",
+  authMiddleware(),
+  productController.getOutOfStockProducts
+);
+
+// Parameterized routes (must come after specific routes)
+router.get(
+  "/:id",
+  getProductValidator,
+  validate,
+  productController.getProductById
+);
+
+router.post(
+  "/:id/adjust-stock",
+  authMiddleware(),
+  stockAdjustmentValidator,
+  validate,
+  productController.adjustStock
+);
+
+router.get(
+  "/:id/stock-history",
+  authMiddleware(),
+  getProductValidator,
+  validate,
+  productController.getStockHistory
 );
 
 router.put(

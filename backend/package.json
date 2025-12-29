@@ -11,6 +11,7 @@
     "dev:minimal": "node src/server-minimal.js",
     "start": "node src/index.js",
     "migrate": "node src/migrate.js",
+    "migrate:shipped": "node src/migrations/add-shipped-status.js",
     "migrate:users": "node scripts/migrate-managers-to-users.js",
     "create-admin": "node scripts/create-admin.js",
     "generate-password": "node scripts/generate-password.js",

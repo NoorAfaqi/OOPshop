@@ -60,9 +60,67 @@ class ProductService {
    * Fetch product from barcode (requires authentication)
    */
   async fetchFromBarcode(barcode: string) {
-    return apiService.post(
+    return apiService.post<{ suggested: any }>(
       API_ENDPOINTS.PRODUCT_FROM_BARCODE,
       { barcode },
+      true
+    );
+  }
+
+  /**
+   * Search products by name from OpenFoodFacts (requires authentication)
+   */
+  async searchProductsByName(searchTerm: string, limit: number = 20) {
+    return apiService.post<{ products: any[] }>(
+      API_ENDPOINTS.PRODUCT_SEARCH,
+      { searchTerm, limit },
+      true
+    );
+  }
+
+  /**
+   * Adjust product stock (requires authentication)
+   */
+  async adjustStock(productId: number, adjustment: {
+    quantity_change: number;
+    change_type?: 'purchase' | 'adjustment' | 'return' | 'damage' | 'other';
+    reason?: string;
+  }) {
+    return apiService.post<Product>(
+      `${API_ENDPOINTS.PRODUCT_BY_ID(productId)}/adjust-stock`,
+      adjustment,
+      true
+    );
+  }
+
+  /**
+   * Get stock history for a product (requires authentication)
+   */
+  async getStockHistory(productId: number, limit: number = 50) {
+    return apiService.get<any[]>(
+      `${API_ENDPOINTS.PRODUCT_BY_ID(productId)}/stock-history`,
+      true,
+      { limit }
+    );
+  }
+
+  /**
+   * Get low stock products (requires authentication)
+   */
+  async getLowStockProducts(threshold?: number) {
+    const params = threshold ? `?threshold=${threshold}` : '';
+    return apiService.get<Product[]>(
+      `${API_ENDPOINTS.PRODUCTS}/low-stock${params}`,
+      true
+    );
+  }
+
+  /**
+   * Get out of stock products (requires authentication)
+   */
+  async getOutOfStockProducts() {
+    return apiService.get<Product[]>(
+      `${API_ENDPOINTS.PRODUCTS}/out-of-stock`,
       true
     );
   }

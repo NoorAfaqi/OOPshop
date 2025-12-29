@@ -22,8 +22,8 @@ const updateInvoiceValidator = [
   body("status")
     .notEmpty()
     .withMessage("Status is required")
-    .isIn(["pending", "paid", "cancelled"])
-    .withMessage("Status must be one of: pending, paid, cancelled"),
+    .isIn(["pending", "paid", "cancelled", "shipped"])
+    .withMessage("Status must be one of: pending, paid, cancelled, shipped"),
 ];
 
 const getInvoiceValidator = [

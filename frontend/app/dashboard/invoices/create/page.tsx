@@ -208,7 +208,7 @@ export default function CreateInvoicePage() {
 
         <form onSubmit={handleSubmit}>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Autocomplete
                 options={users}
                 getOptionLabel={(option) =>
@@ -224,7 +224,7 @@ export default function CreateInvoicePage() {
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
                 Add Products
               </Typography>
@@ -261,7 +261,7 @@ export default function CreateInvoicePage() {
             </Grid>
 
             {items.length > 0 && (
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Table size="small">
                   <TableHead>
                     <TableRow>
@@ -309,7 +309,7 @@ export default function CreateInvoicePage() {
               </Grid>
             )}
 
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
                 <Button
                   variant="outlined"

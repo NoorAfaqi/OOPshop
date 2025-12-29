@@ -13,11 +13,13 @@ import {
 } from "@mui/material";
 import { useRouter, useParams } from "next/navigation";
 import { STORAGE_KEYS } from "@/lib/config/api.config";
+import { productService } from "@/lib/services/product.service";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import EditIcon from "@mui/icons-material/Edit";
+import Inventory2Icon from "@mui/icons-material/Inventory2";
 import Image from "next/image";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+import StockAdjustmentDialog from "@/components/inventory/StockAdjustmentDialog";
+import StockHistory from "@/components/inventory/StockHistory";
 
 interface Product {
   id: number;
@@ -39,37 +41,26 @@ export default function ProductDetailsPage() {
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [stockAdjustDialogOpen, setStockAdjustDialogOpen] = useState(false);
 
-  const token =
-    typeof window !== "undefined"
-      ? window.localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)
-      : null;
+  const loadProduct = async () => {
+    if (!productId) return;
+    setLoading(true);
+    try {
+      const response = await productService.getProductById(Number(productId));
+      if (response.status === 'success' && response.data) {
+        setProduct(response.data);
+      }
+    } catch (err) {
+      console.error("Error loading product:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadProduct = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`${API_BASE}/products/${productId}`, {
-          headers: {
-            Authorization: token ? `Bearer ${token}` : "",
-          },
-        });
-        if (!res.ok) {
-          throw new Error("Failed to load product");
-        }
-        const data = await res.json();
-        setProduct(Array.isArray(data) ? data[0] : data.data || data);
-      } catch (err) {
-        console.error("Error loading product:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (productId) {
-      loadProduct();
-    }
-  }, [productId, token]);
+    loadProduct();
+  }, [productId]);
 
   if (loading) {
     return <Typography>Loading...</Typography>;
@@ -88,13 +79,22 @@ export default function ProductDetailsPage() {
         >
           Back
         </Button>
-        <Button
-          startIcon={<EditIcon />}
-          variant="contained"
-          onClick={() => router.push(`/dashboard/products/${productId}/edit`)}
-        >
-          Edit Product
-        </Button>
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Button
+            startIcon={<Inventory2Icon />}
+            variant="outlined"
+            onClick={() => setStockAdjustDialogOpen(true)}
+          >
+            Adjust Stock
+          </Button>
+          <Button
+            startIcon={<EditIcon />}
+            variant="contained"
+            onClick={() => router.push(`/dashboard/products/${productId}/edit`)}
+          >
+            Edit Product
+          </Button>
+        </Box>
       </Box>
 
       <Typography variant="h5" fontWeight={600} mb={3}>
@@ -102,7 +102,7 @@ export default function ProductDetailsPage() {
       </Typography>
 
       <Grid container spacing={2}>
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card sx={{ p: 3 }}>
             {product.image_url ? (
               <Box
@@ -152,7 +152,7 @@ export default function ProductDetailsPage() {
             </Typography>
 
             <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={6}>
+              <Grid size={{ xs: 6 }}>
                 <Typography variant="body2" color="text.secondary">
                   Brand
                 </Typography>
@@ -160,7 +160,7 @@ export default function ProductDetailsPage() {
                   {product.brand || "—"}
                 </Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={{ xs: 6 }}>
                 <Typography variant="body2" color="text.secondary">
                   Category
                 </Typography>
@@ -168,7 +168,7 @@ export default function ProductDetailsPage() {
                   {product.category || "—"}
                 </Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={{ xs: 6 }}>
                 <Typography variant="body2" color="text.secondary">
                   Stock Quantity
                 </Typography>
@@ -184,7 +184,7 @@ export default function ProductDetailsPage() {
                   }
                 />
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={{ xs: 6 }}>
                 <Typography variant="body2" color="text.secondary">
                   Status
                 </Typography>
@@ -195,7 +195,7 @@ export default function ProductDetailsPage() {
                 />
               </Grid>
               {product.open_food_facts_barcode && (
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <Typography variant="body2" color="text.secondary">
                     Barcode
                   </Typography>
@@ -208,7 +208,7 @@ export default function ProductDetailsPage() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card sx={{ p: 3 }}>
             <Typography variant="h6" mb={2}>
               Nutritional Information
@@ -258,6 +258,23 @@ export default function ProductDetailsPage() {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Stock History */}
+      <Box sx={{ mt: 3 }}>
+        <StockHistory productId={Number(productId)} />
+      </Box>
+
+      {/* Stock Adjustment Dialog */}
+      {product && (
+        <StockAdjustmentDialog
+          open={stockAdjustDialogOpen}
+          onClose={() => setStockAdjustDialogOpen(false)}
+          product={product}
+          onSuccess={() => {
+            loadProduct();
+          }}
+        />
+      )}
     </Box>
   );
 }

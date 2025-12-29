@@ -87,7 +87,7 @@ export default function DashboardOverviewPage() {
         });
         const usersData = usersRes.ok ? await usersRes.json() : { data: [] };
 
-        // Fetch products count and low stock
+        // Fetch products count
         const productsRes = await fetch(`${API_BASE}/products`, {
           headers: {
             Authorization: token ? `Bearer ${token}` : "",
@@ -95,7 +95,16 @@ export default function DashboardOverviewPage() {
         });
         const productsData = productsRes.ok ? await productsRes.json() : [];
         const products = Array.isArray(productsData) ? productsData : productsData.data || [];
-        const lowStockCount = products.filter((p: any) => p.stock_quantity < 10).length;
+        
+        // Fetch low stock products using API
+        const lowStockRes = await fetch(`${API_BASE}/products/low-stock`, {
+          headers: {
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+        });
+        const lowStockData = lowStockRes.ok ? await lowStockRes.json() : [];
+        const lowStockProducts = Array.isArray(lowStockData) ? lowStockData : (lowStockData.data || []);
+        const lowStockCount = lowStockProducts.length;
 
         setQuickStats({
           total_users: Array.isArray(usersData) ? usersData.length : (usersData.data?.length || 0),

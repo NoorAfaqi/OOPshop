@@ -82,6 +82,7 @@ class CheckoutService {
       
       // Calculate total and validate stock
       let total = 0;
+      const stockChanges = [];
       for (const item of items) {
         const [rows] = await connection.query(
           "SELECT price, stock_quantity FROM products WHERE id = ? FOR UPDATE",
@@ -100,10 +101,22 @@ class CheckoutService {
         total += Number(product.price) * item.quantity;
         
         // Update stock
+        const previousQuantity = product.stock_quantity;
+        const newQuantity = previousQuantity - item.quantity;
+        
         await connection.query(
-          "UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?",
-          [item.quantity, item.product_id]
+          "UPDATE products SET stock_quantity = ? WHERE id = ?",
+          [newQuantity, item.product_id]
         );
+
+        // Store stock change for history recording after invoice creation
+        stockChanges.push({
+          product_id: item.product_id,
+          user_id: userId,
+          quantity_change: -item.quantity,
+          previous_quantity: previousQuantity,
+          new_quantity: newQuantity,
+        });
       }
       
       // Create invoice (now references user_id instead of customer_id)
@@ -112,6 +125,16 @@ class CheckoutService {
         [userId, total]
       );
       const invoiceId = invoiceResult.insertId;
+
+      // Record stock history with invoice reference
+      for (const stockChange of stockChanges) {
+        await connection.query(
+          `INSERT INTO stock_history 
+           (product_id, user_id, change_type, quantity_change, previous_quantity, new_quantity, reason, reference_type, reference_id)
+           VALUES (?, ?, 'sale', ?, ?, ?, 'Checkout sale', 'invoice', ?)`,
+          [stockChange.product_id, stockChange.user_id, stockChange.quantity_change, stockChange.previous_quantity, stockChange.new_quantity, invoiceId]
+        );
+      }
       
       // Create invoice items
       for (const item of items) {

@@ -167,7 +167,7 @@ export default function SignUpPage() {
           {/* Form */}
           <form onSubmit={handleSubmit}>
             <Grid container spacing={2.5}>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="First Name"
@@ -181,7 +181,7 @@ export default function SignUpPage() {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Last Name"
@@ -195,7 +195,7 @@ export default function SignUpPage() {
                   }}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   fullWidth
                   label="Email Address"
@@ -210,7 +210,7 @@ export default function SignUpPage() {
                   }}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   fullWidth
                   label="Phone (Optional)"
@@ -223,7 +223,7 @@ export default function SignUpPage() {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Password"
@@ -239,7 +239,7 @@ export default function SignUpPage() {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   label="Confirm Password"
@@ -254,7 +254,7 @@ export default function SignUpPage() {
                   }}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Button
                   fullWidth
                   type="submit"

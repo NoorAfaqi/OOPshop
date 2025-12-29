@@ -30,8 +30,10 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
 import InventoryIcon from "@mui/icons-material/Inventory";
+import Inventory2Icon from "@mui/icons-material/Inventory2";
 import { useRouter } from "next/navigation";
 import { STORAGE_KEYS } from "@/lib/config/api.config";
+import StockAdjustmentDialog from "@/components/inventory/StockAdjustmentDialog";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -55,6 +57,8 @@ export default function ProductsPage() {
   const [barcode, setBarcode] = useState("");
   const [form, setForm] = useState<Partial<Product>>({});
   const [saving, setSaving] = useState(false);
+  const [stockAdjustDialogOpen, setStockAdjustDialogOpen] = useState(false);
+  const [selectedProductForStock, setSelectedProductForStock] = useState<Product | null>(null);
 
   const token =
     typeof window !== "undefined"
@@ -205,6 +209,14 @@ export default function ProductsPage() {
           >
             Add Product
           </Button>
+          <Button
+            startIcon={<QrCodeScannerIcon />}
+            variant="outlined"
+            onClick={() => router.push("/dashboard/import-product")}
+            sx={{ borderRadius: 2 }}
+          >
+            Import from OpenFoodFacts
+          </Button>
         </Box>
       </Card>
 
@@ -294,6 +306,20 @@ export default function ProductsPage() {
                         </IconButton>
                         <IconButton
                           size="small"
+                          onClick={() => {
+                            setSelectedProductForStock(p);
+                            setStockAdjustDialogOpen(true);
+                          }}
+                          sx={{
+                            color: "primary.main",
+                            "&:hover": { bgcolor: alpha("#667eea", 0.1) },
+                          }}
+                          title="Adjust Stock"
+                        >
+                          <Inventory2Icon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
                           onClick={() => router.push(`/dashboard/products/${p.id}/edit`)}
                           sx={{
                             color: "text.secondary",
@@ -338,11 +364,9 @@ export default function ProductsPage() {
           sx: { borderRadius: 3 },
         }}
       >
-        <DialogTitle sx={{ pb: 1 }}>
-          <Typography variant="h6" fontWeight={700}>
-            Add New Product
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+        <DialogTitle sx={{ pb: 1, fontWeight: 700 }}>
+          Add New Product
+          <Typography variant="body2" color="text.secondary" component="div" sx={{ mt: 0.5 }}>
             Create a new product or fetch from barcode
           </Typography>
         </DialogTitle>
@@ -438,6 +462,20 @@ export default function ProductsPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {selectedProductForStock && (
+        <StockAdjustmentDialog
+          open={stockAdjustDialogOpen}
+          onClose={() => {
+            setStockAdjustDialogOpen(false);
+            setSelectedProductForStock(null);
+          }}
+          product={selectedProductForStock}
+          onSuccess={() => {
+            loadProducts();
+          }}
+        />
+      )}
     </Box>
   );
 }

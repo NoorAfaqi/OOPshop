@@ -15,9 +15,8 @@ export default function Footer() {
   }, []);
 
   // Hide footer on dashboard, account, and login pages
-  if (!mounted || pathname?.startsWith("/dashboard") || pathname?.startsWith("/account") || pathname === "/login") {
-    return null;
-  }
+  // Use mounted check to ensure consistent SSR/client rendering
+  const shouldHide = mounted && (pathname?.startsWith("/dashboard") || pathname?.startsWith("/account") || pathname === "/login");
 
   return (
     <Box
@@ -27,6 +26,7 @@ export default function Footer() {
         color: "white",
         py: 6,
         mt: "auto",
+        display: shouldHide ? "none" : "block",
       }}
     >
       <Container maxWidth="lg">
