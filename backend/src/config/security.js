@@ -7,11 +7,12 @@ const helmetConfig = helmet({
   contentSecurityPolicy: process.env.NODE_ENV === "production" ? {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
       imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
     },
-  } : false, // Disable CSP in development
+  } : false, // Disable CSP in development (allows Swagger UI to work)
   hsts: process.env.NODE_ENV === "production" ? {
     maxAge: 31536000,
     includeSubDomains: true,
@@ -41,10 +42,34 @@ const generalLimiter = createRateLimiter(
 // Strict rate limiter for authentication endpoints
 const authLimiter = createRateLimiter(15 * 60 * 1000, 5);
 
-// CORS configuration
+// CORS configuration - supports both web and mobile
+const getCorsOrigin = () => {
+  const corsOrigin = process.env.CORS_ORIGIN;
+  
+  // If CORS_ORIGIN is not set, allow all origins in development (for mobile testing)
+  if (!corsOrigin) {
+    return process.env.NODE_ENV === "production" ? "http://localhost:3000" : true;
+  }
+  
+  // If CORS_ORIGIN is "*", allow all origins
+  if (corsOrigin === "*") {
+    return true;
+  }
+  
+  // Support multiple origins (comma-separated)
+  if (corsOrigin.includes(",")) {
+    return corsOrigin.split(",").map(origin => origin.trim());
+  }
+  
+  // Single origin
+  return corsOrigin;
+};
+
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+  origin: getCorsOrigin(),
   credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   optionsSuccessStatus: 200,
 };
 

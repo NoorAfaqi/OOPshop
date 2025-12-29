@@ -11,8 +11,15 @@ RUN npm install
 # Copy source code
 COPY . .
 
+# Copy and set permissions for entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Expose port
 EXPOSE 5000
+
+# Use entrypoint script to run migrations before starting server
+ENTRYPOINT ["docker-entrypoint.sh"]
 
 # Run development server
 CMD ["npm", "run", "dev"]

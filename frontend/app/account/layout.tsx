@@ -111,12 +111,14 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
       <AppBar
         position="fixed"
         elevation={0}
+        color="default"
         sx={{
           zIndex: (theme) => theme.zIndex.drawer + 1,
           backdropFilter: "blur(20px)",
-          backgroundColor: alpha("#ffffff", 0.8),
+          bgcolor: alpha("#ffffff", 0.95),
           borderBottom: "1px solid",
-          borderColor: "divider",
+          borderColor: alpha("#667eea", 0.1),
+          boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
         }}
       >
         <Toolbar sx={{ minHeight: 70, px: 3, justifyContent: "space-between" }}>
@@ -132,16 +134,34 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
                 justifyContent: "center",
                 color: "white",
                 cursor: "pointer",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  bgcolor: "#5568d3",
+                  transform: "scale(1.05)",
+                },
               }}
               onClick={() => router.push("/")}
             >
               <StoreIcon />
             </Box>
             <Box>
-              <Typography variant="h6" color="text.primary" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  fontWeight: 600, 
+                  lineHeight: 1.2,
+                  color: "#1a1a1a",
+                }}
+              >
                 My Account
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1 }}>
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  lineHeight: 1,
+                  color: "text.secondary",
+                }}
+              >
                 Customer Portal
               </Typography>
             </Box>

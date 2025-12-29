@@ -17,7 +17,9 @@ import {
   Skeleton,
   alpha,
   Chip,
+  Tooltip,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import InsightsIcon from "@mui/icons-material/Insights";
 import { STORAGE_KEYS } from "@/lib/config/api.config";
 
@@ -32,6 +34,224 @@ interface TopProduct {
   id: number;
   name: string;
   total_quantity: number;
+}
+
+// Animated Line Chart Component
+function LineChart({ data }: { data: SalesTrendPoint[] }) {
+  const theme = useTheme();
+  const [animated, setAnimated] = useState(false);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    // Trigger animation after mount
+    setTimeout(() => setAnimated(true), 100);
+  }, [data]);
+
+  const width = 600;
+  const height = 240;
+  const padding = { top: 20, right: 20, bottom: 40, left: 50 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+
+  const values = data.map((d) => Number(d.total) || 0);
+  const maxValue = Math.max(...values, 1);
+  const minValue = Math.min(...values, 0);
+
+  // Calculate points
+  const points = data.map((d, idx) => {
+    const x = padding.left + (idx / (data.length - 1 || 1)) * chartWidth;
+    const value = Number(d.total) || 0;
+    const y = padding.top + chartHeight - ((value - minValue) / (maxValue - minValue || 1)) * chartHeight;
+    return { x, y, value, date: d.date };
+  });
+
+  // Create path for line
+  const linePath = points
+    .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`)
+    .join(" ");
+
+  // Create path for area under line
+  const areaPath = `${linePath} L ${points[points.length - 1]?.x || padding.left} ${padding.top + chartHeight} L ${points[0]?.x || padding.left} ${padding.top + chartHeight} Z`;
+
+  return (
+    <Box sx={{ width: "100%", height: "100%", position: "relative", overflow: "visible" }}>
+      <svg
+        width="100%"
+        height={height}
+        viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio="xMidYMid meet"
+        style={{ overflow: "visible" }}
+      >
+        {/* Grid lines */}
+        {Array.from({ length: 5 }, (_, i) => {
+          const y = padding.top + (i / 4) * chartHeight;
+          const value = maxValue - (i / 4) * (maxValue - minValue);
+          return (
+            <g key={i}>
+              <line
+                x1={padding.left}
+                y1={y}
+                x2={width - padding.right}
+                y2={y}
+                stroke={alpha(theme.palette.divider, 0.3)}
+                strokeWidth={1}
+                strokeDasharray="4 4"
+              />
+              <text
+                x={padding.left - 10}
+                y={y + 4}
+                textAnchor="end"
+                fontSize="10"
+                fill={theme.palette.text.secondary}
+              >
+                €{value.toFixed(0)}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Area gradient */}
+        <defs>
+          <linearGradient id="areaGradientReports" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={alpha("#667eea", 0.3)} />
+            <stop offset="100%" stopColor={alpha("#667eea", 0.05)} />
+          </linearGradient>
+        </defs>
+
+        {/* Area under line */}
+        {points.length > 0 && (
+          <path
+            d={areaPath}
+            fill="url(#areaGradientReports)"
+            opacity={animated ? 1 : 0}
+            style={{
+              transition: "opacity 0.8s ease-out",
+            }}
+          />
+        )}
+
+        {/* Line */}
+        {points.length > 0 && (
+          <path
+            d={linePath}
+            fill="none"
+            stroke="#667eea"
+            strokeWidth={3}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity={animated ? 1 : 0}
+            style={{
+              transition: "opacity 0.8s ease-out",
+              filter: "drop-shadow(0 2px 4px rgba(102, 126, 234, 0.3))",
+            }}
+          >
+            <animate
+              attributeName="stroke-dasharray"
+              from="0 1000"
+              to="1000 0"
+              dur="1.5s"
+              fill="freeze"
+            />
+          </path>
+        )}
+
+        {/* Data points */}
+        {points.map((point, idx) => (
+          <g key={idx}>
+            {/* Hover circle */}
+            {hoveredIndex === idx && (
+              <circle
+                cx={point.x}
+                cy={point.y}
+                r={8}
+                fill="#667eea"
+                opacity={0.2}
+              >
+                <animate
+                  attributeName="r"
+                  values="8;12;8"
+                  dur="2s"
+                  repeatCount="indefinite"
+                />
+                <animate
+                  attributeName="opacity"
+                  values="0.2;0.4;0.2"
+                  dur="2s"
+                  repeatCount="indefinite"
+                />
+              </circle>
+            )}
+            {/* Point */}
+            <circle
+              cx={point.x}
+              cy={point.y}
+              r={hoveredIndex === idx ? 6 : 4}
+              fill="#667eea"
+              stroke="white"
+              strokeWidth={2}
+              style={{
+                transition: "all 0.3s ease",
+                cursor: "pointer",
+                transform: hoveredIndex === idx ? "scale(1.5)" : "scale(1)",
+              }}
+              onMouseEnter={() => setHoveredIndex(idx)}
+              onMouseLeave={() => setHoveredIndex(null)}
+            >
+              <animate
+                attributeName="opacity"
+                from="0"
+                to="1"
+                dur="0.5s"
+                begin={`${idx * 0.1}s`}
+                fill="freeze"
+              />
+            </circle>
+            {/* Date labels */}
+            <text
+              x={point.x}
+              y={height - 10}
+              textAnchor="middle"
+              fontSize="10"
+              fill={theme.palette.text.secondary}
+            >
+              {new Date(point.date).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })}
+            </text>
+            {/* Value tooltip on hover */}
+            {hoveredIndex === idx && (
+              <g>
+                <rect
+                  x={point.x - 35}
+                  y={point.y - 35}
+                  width={70}
+                  height={25}
+                  rx={4}
+                  fill="rgba(0, 0, 0, 0.85)"
+                  opacity={0.95}
+                />
+                <text
+                  x={point.x}
+                  y={point.y - 18}
+                  textAnchor="middle"
+                  fontSize="11"
+                  fill="white"
+                  fontWeight={600}
+                >
+                  €{point.value.toFixed(2)}
+                </text>
+                <polygon
+                  points={`${point.x - 6},${point.y - 10} ${point.x + 6},${point.y - 10} ${point.x},${point.y - 4}`}
+                  fill="rgba(0, 0, 0, 0.85)"
+                />
+              </g>
+            )}
+          </g>
+        ))}
+      </svg>
+    </Box>
+  );
 }
 
 export default function ReportsPage() {
@@ -73,11 +293,38 @@ export default function ReportsPage() {
         throw new Error("Failed to load reports");
       }
       const data = await res.json();
+      const salesTrend = data.data?.sales_trend || data.sales_trend || [];
+      
+      // Fill in missing dates if date range is provided
+      let formattedSalesTrend = salesTrend;
+      if (dateFrom && dateTo) {
+        const startDate = new Date(dateFrom);
+        const endDate = new Date(dateTo);
+        const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Create a map of existing data
+        const dataMap = new Map(salesTrend.map((item: SalesTrendPoint) => [
+          item.date?.split('T')[0] || item.date,
+          Number(item.total) || 0
+        ]));
+        
+        // Generate all dates in range
+        formattedSalesTrend = Array.from({ length: daysDiff + 1 }, (_, i) => {
+          const date = new Date(startDate);
+          date.setDate(startDate.getDate() + i);
+          const dateStr = date.toISOString().split('T')[0];
+          return {
+            date: dateStr,
+            total: dataMap.get(dateStr) || 0,
+          };
+        });
+      }
+      
       setMetrics({
         total_sales: data.data?.total_sales || data.total_sales || 0,
         avg_purchase: data.data?.avg_purchase || data.avg_purchase || 0,
         median_payment: data.data?.median_payment || data.median_payment || 0,
-        sales_trend: data.data?.sales_trend || data.sales_trend || [],
+        sales_trend: formattedSalesTrend,
         most_purchased_products:
           data.data?.most_purchased_products || data.most_purchased_products || [],
       });
@@ -100,7 +347,7 @@ export default function ReportsPage() {
   const handleClearFilter = () => {
     setDateFrom(null);
     setDateTo(null);
-    fetchReports();
+    setTimeout(() => fetchReports(), 0);
   };
 
   return (
@@ -262,57 +509,28 @@ export default function ReportsPage() {
                 Sales Trend
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Daily sales overview
+                {dateFrom && dateTo 
+                  ? `Sales from ${dateFrom.toLocaleDateString()} to ${dateTo.toLocaleDateString()}`
+                  : "Daily sales overview"}
               </Typography>
-            <Box
-              sx={{
-                height: 300,
-                display: "flex",
-                alignItems: "flex-end",
-                gap: 0.75,
-              }}
-            >
-              {!loading && metrics?.sales_trend?.length
-                ? metrics.sales_trend.map((p) => (
-                    <Box
-                      key={p.date}
-                      sx={{
-                        flex: 1,
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "flex-end",
-                        gap: 0.5,
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          width: "60%",
-                          borderRadius: 999,
-                          bgcolor: "primary.main",
-                          height: `${Math.min(
-                            100,
-                            (Number(p.total) / (metrics.total_sales || 1)) * 100
-                          )}%`,
-                          transition: "height 0.3s ease-out",
-                        }}
-                      />
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ whiteSpace: "nowrap" }}
-                      >
-                        {new Date(p.date).toLocaleDateString()}
+              {loading ? (
+                <Box sx={{ height: 320, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Skeleton variant="rectangular" width="100%" height={300} />
+                </Box>
+              ) : (
+                <Box sx={{ position: "relative", height: 320, width: "100%" }}>
+                  {metrics?.sales_trend?.length ? (
+                    <LineChart data={metrics.sales_trend} />
+                  ) : (
+                    <Box sx={{ width: "100%", textAlign: "center", py: 4, height: 320, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Typography variant="body2" color="text.secondary">
+                        No sales data available for the selected period
                       </Typography>
                     </Box>
-                  ))
-                : !loading && (
-                    <Typography variant="body2" color="text.secondary">
-                      No sales data yet.
-                    </Typography>
                   )}
+                </Box>
+              )}
             </Box>
-          </Box>
           </Card>
         </Box>
 

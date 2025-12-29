@@ -17,7 +17,7 @@ export default function RootLayout({
     <html lang="en" data-scroll-behavior="smooth">
       <body style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }} suppressHydrationWarning>
         <ThemeRegistry>
-          <div style={{ flex: 1 }} suppressHydrationWarning>
+          <div style={{ flex: 1 }}>
             {children}
           </div>
           <Footer />

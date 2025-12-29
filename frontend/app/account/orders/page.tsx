@@ -15,6 +15,11 @@ import {
   Button,
   CircularProgress,
   alpha,
+  Pagination,
+  Select,
+  FormControl,
+  InputLabel,
+  MenuItem,
 } from "@mui/material";
 import ReceiptIcon from "@mui/icons-material/Receipt";
 import { useRouter } from "next/navigation";
@@ -33,6 +38,10 @@ export default function OrderHistoryPage() {
   const router = useRouter();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -47,9 +56,13 @@ export default function OrderHistoryPage() {
           return;
         }
 
-        // Use account/orders endpoint
+        // Use account/orders endpoint with pagination
+        const params = new URLSearchParams();
+        params.set("page", page.toString());
+        params.set("limit", limit.toString());
+        
         const res = await fetch(
-          `${API_BASE}/account/orders`,
+          `${API_BASE}/account/orders?${params.toString()}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -59,7 +72,25 @@ export default function OrderHistoryPage() {
 
         if (res.ok) {
           const data = await res.json();
-          setInvoices(data.data || data);
+          
+          // Handle paginated response
+          if (data.pagination) {
+            setInvoices(data.data || []);
+            setTotal(data.pagination.total);
+            setTotalPages(data.pagination.pages);
+          } else if (Array.isArray(data)) {
+            setInvoices(data);
+            setTotal(data.length);
+            setTotalPages(1);
+          } else if (data.data) {
+            setInvoices(Array.isArray(data.data) ? data.data : []);
+            setTotal(data.pagination?.total || data.data.length);
+            setTotalPages(data.pagination?.pages || 1);
+          } else {
+            setInvoices([]);
+            setTotal(0);
+            setTotalPages(0);
+          }
         }
       } catch (error) {
         console.error("Error loading orders:", error);
@@ -69,7 +100,7 @@ export default function OrderHistoryPage() {
     };
 
     loadOrders();
-  }, [router]);
+  }, [router, page, limit]);
 
   if (loading) {
     return (
@@ -193,6 +224,66 @@ export default function OrderHistoryPage() {
               ))}
             </TableBody>
           </Table>
+        )}
+
+        {/* Pagination */}
+        {!loading && invoices.length > 0 && totalPages > 1 && (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mt: 3,
+              flexWrap: "wrap",
+              gap: 2,
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                Showing {((page - 1) * limit) + 1} - {Math.min(page * limit, total)} of {total} orders
+              </Typography>
+              <FormControl size="small" sx={{ minWidth: 120 }}>
+                <InputLabel>Per Page</InputLabel>
+                <Select
+                  value={limit}
+                  label="Per Page"
+                  onChange={(e) => {
+                    setLimit(Number(e.target.value));
+                    setPage(1);
+                  }}
+                >
+                  <MenuItem value={5}>5</MenuItem>
+                  <MenuItem value={10}>10</MenuItem>
+                  <MenuItem value={20}>20</MenuItem>
+                  <MenuItem value={50}>50</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+            <Pagination
+              count={totalPages}
+              page={page}
+              onChange={(_, value) => {
+                setPage(value);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              color="primary"
+              size="large"
+              showFirstButton
+              showLastButton
+              sx={{
+                "& .MuiPaginationItem-root": {
+                  fontSize: "0.95rem",
+                },
+                "& .Mui-selected": {
+                  bgcolor: "#667eea",
+                  color: "white",
+                  "&:hover": {
+                    bgcolor: "#5568d3",
+                  },
+                },
+              }}
+            />
+          </Box>
         )}
       </Paper>
     </Box>

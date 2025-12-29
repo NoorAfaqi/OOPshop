@@ -50,6 +50,11 @@ JWT_SECRET=your_jwt_secret_key_change_this
 JWT_EXPIRES_IN=1d
 
 # CORS Configuration
+# Supports both web and mobile:
+# - Single origin: CORS_ORIGIN=http://localhost:3000
+# - Multiple origins: CORS_ORIGIN=http://localhost:3000,https://yourapp.com
+# - Allow all (development): CORS_ORIGIN=* (or leave empty in development)
+# - Mobile apps don't need CORS but will work with any configuration
 CORS_ORIGIN=http://localhost:3000
 
 # Rate Limiting

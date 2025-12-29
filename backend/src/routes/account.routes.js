@@ -41,6 +41,20 @@ router.get(
   "/orders",
   authMiddleware.requireAuth(),
   asyncHandler(async (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    // Get total count
+    const [countResult] = await db.query(
+      `SELECT COUNT(DISTINCT i.id) as total
+       FROM invoices i
+       WHERE i.user_id = ?`,
+      [req.user.id]
+    );
+    const total = countResult[0]?.total || 0;
+
+    // Get paginated invoices
     const [invoices] = await db.query(
       `SELECT 
         i.*, 
@@ -51,9 +65,16 @@ router.get(
        LEFT JOIN products p ON p.id = ii.product_id
        WHERE i.user_id = ?
        GROUP BY i.id
-       ORDER BY i.created_at DESC`,
-      [req.user.id]
+       ORDER BY i.created_at DESC
+       LIMIT ? OFFSET ?`,
+      [req.user.id, limit, offset]
     );
+    
+    // Return paginated response if page/limit provided, otherwise return all
+    if (req.query.page || req.query.limit) {
+      const { paginatedResponse } = require("../utils/response");
+      return paginatedResponse(res, invoices, page, limit, total);
+    }
     
     successResponse(res, invoices, "Orders fetched successfully");
   })

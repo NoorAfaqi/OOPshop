@@ -34,39 +34,38 @@ const app = express();
 // });
 
 // CORS must be first - before any other middleware
-app.use(require("cors")({
-  origin: "http://localhost:3000",
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-}));
+// Supports both web browsers (CORS) and mobile apps (no CORS needed, but headers still sent)
+app.use(corsOptions);
+
+// API Documentation with Swagger - register early to avoid conflicts
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    explorer: true,
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: "OOPshop API Documentation",
+  })
+);
 
 // Security middleware
-// Temporarily disabled to debug connection reset issue
-// app.use(helmetConfig);
-// app.use(generalLimiter);
+app.use(helmetConfig);
+app.use(generalLimiter);
 
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Logging middleware - temporarily disabled to debug
-// if (process.env.NODE_ENV === "development") {
-//   app.use(morgan("dev"));
-// } else {
-//   app.use(morgan("combined", {
-//     stream: {
-//       write: (message) => logger.info(message.trim())
-//     }
-//   }));
-// }
-
-// API Documentation with Swagger - temporarily disabled to debug
-// app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-//   explorer: true,
-//   customCss: '.swagger-ui .topbar { display: none }',
-//   customSiteTitle: "OOPshop API Documentation",
-// }));
+// Logging middleware
+if (process.env.NODE_ENV === "development") {
+  app.use(morgan("dev"));
+} else {
+  app.use(morgan("combined", {
+    stream: {
+      write: (message) => logger.info(message.trim())
+    }
+  }));
+}
 
 // Health check endpoint
 /**

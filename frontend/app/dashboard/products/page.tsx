@@ -76,7 +76,14 @@ export default function ProductsPage() {
         },
       });
       const data = await res.json();
-      setProducts(data);
+      // Handle different response formats: array, { data: [...] }, or { data: [...], pagination: {...} }
+      const productsList = Array.isArray(data) 
+        ? data 
+        : (data.data || []);
+      setProducts(Array.isArray(productsList) ? productsList : []);
+    } catch (error) {
+      console.error("Error loading products:", error);
+      setProducts([]);
     } finally {
       setLoading(false);
     }

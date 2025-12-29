@@ -30,6 +30,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import SortIcon from "@mui/icons-material/Sort";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+import CancelIcon from "@mui/icons-material/Cancel";
 import { useRouter } from "next/navigation";
 import { STORAGE_KEYS } from "@/lib/config/api.config";
 
@@ -344,6 +345,23 @@ export default function InvoicesPage() {
                             title="Mark as shipped"
                           >
                             <LocalShippingIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                        {(invoice.status === "pending" || invoice.status === "paid") && (
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              if (window.confirm("Are you sure you want to cancel this order? Stock will be restored if the order was paid.")) {
+                                handleStatusUpdate(invoice.id, "cancelled");
+                              }
+                            }}
+                            sx={{
+                              color: "error.main",
+                              "&:hover": { bgcolor: alpha("#f5576c", 0.1) },
+                            }}
+                            title="Cancel order"
+                          >
+                            <CancelIcon fontSize="small" />
                           </IconButton>
                         )}
                         <IconButton

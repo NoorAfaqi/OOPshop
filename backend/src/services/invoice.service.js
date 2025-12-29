@@ -18,9 +18,8 @@ class InvoiceService {
     try {
       await connection.beginTransaction();
 
-      // Calculate total and validate stock
+      // Calculate total and validate stock (but don't reduce it yet - will be reduced when shipped)
       let total = 0;
-      const stockChanges = [];
       for (const item of items) {
         const [rows] = await connection.query(
           "SELECT price, stock_quantity FROM products WHERE id = ? FOR UPDATE",
@@ -32,48 +31,22 @@ class InvoiceService {
           throw new AppError(`Product with ID ${item.product_id} not found`, 404);
         }
 
+        // Validate stock availability but don't reduce it yet
         if (product.stock_quantity < item.quantity) {
-          throw new AppError(`Insufficient stock for product ID ${item.product_id}`, 400);
+          throw new AppError(`Insufficient stock for product ID ${item.product_id}. Available: ${product.stock_quantity}, Required: ${item.quantity}`, 400);
         }
 
         total += Number(product.price) * item.quantity;
-
-        // Update stock and record history
-        const previousQuantity = product.stock_quantity;
-        const newQuantity = previousQuantity - item.quantity;
-        
-        await connection.query(
-          "UPDATE products SET stock_quantity = ? WHERE id = ?",
-          [newQuantity, item.product_id]
-        );
-
-        // Store stock change for history recording after invoice creation
-        stockChanges.push({
-          product_id: item.product_id,
-          user_id: user_id,
-          quantity_change: -item.quantity,
-          previous_quantity: previousQuantity,
-          new_quantity: newQuantity,
-        });
       }
 
       // Create invoice
+      // Stock will be reduced when order status changes to "shipped"
       const [invoiceResult] = await connection.query(
         "INSERT INTO invoices (user_id, total_amount, status) VALUES (?, ?, 'pending')",
         [user_id, total]
       );
 
       const invoiceId = invoiceResult.insertId;
-
-      // Record stock history with invoice reference
-      for (const stockChange of stockChanges) {
-        await connection.query(
-          `INSERT INTO stock_history 
-           (product_id, user_id, change_type, quantity_change, previous_quantity, new_quantity, reason, reference_type, reference_id)
-           VALUES (?, ?, 'sale', ?, ?, ?, 'Invoice sale', 'invoice', ?)`,
-          [stockChange.product_id, stockChange.user_id, stockChange.quantity_change, stockChange.previous_quantity, stockChange.new_quantity, invoiceId]
-        );
-      }
 
       // Create invoice items
       for (const item of items) {
@@ -161,16 +134,142 @@ class InvoiceService {
    * Update invoice status
    */
   async updateInvoiceStatus(id, status) {
+    const connection = await pool.getConnection();
+    
     try {
-      await pool.query("UPDATE invoices SET status = ? WHERE id = ?", [status, id]);
+      await connection.beginTransaction();
+
+      // Get current invoice status and items
+      const [invoiceRows] = await connection.query(
+        "SELECT status FROM invoices WHERE id = ?",
+        [id]
+      );
+      
+      if (invoiceRows.length === 0) {
+        throw new AppError("Invoice not found", 404);
+      }
+      
+      const oldStatus = invoiceRows[0].status;
+      
+      // Get invoice items
+      const [items] = await connection.query(
+        "SELECT product_id, quantity FROM invoice_items WHERE invoice_id = ?",
+        [id]
+      );
+
+      // Handle stock changes based on status transition
+      if (status === "shipped" && oldStatus !== "shipped") {
+        // Check if stock was already reduced for this invoice
+        const [existingStockHistory] = await connection.query(
+          `SELECT SUM(quantity_change) as total_reduced 
+           FROM stock_history 
+           WHERE reference_type = 'invoice' AND reference_id = ? AND change_type = 'sale'`,
+          [id]
+        );
+        
+        const alreadyReduced = existingStockHistory[0]?.total_reduced || 0;
+        
+        // Reduce stock when shipping (only if not already reduced)
+        for (const item of items) {
+          const [productRows] = await connection.query(
+            "SELECT stock_quantity FROM products WHERE id = ? FOR UPDATE",
+            [item.product_id]
+          );
+          
+          if (productRows.length === 0) {
+            throw new AppError(`Product with ID ${item.product_id} not found`, 404);
+          }
+          
+          const currentStock = productRows[0].stock_quantity;
+          
+          // Check if stock for this specific product was already reduced
+          const [productStockHistory] = await connection.query(
+            `SELECT SUM(quantity_change) as total_reduced 
+             FROM stock_history 
+             WHERE reference_type = 'invoice' AND reference_id = ? 
+             AND product_id = ? AND change_type = 'sale'`,
+            [id, item.product_id]
+          );
+          
+          const productAlreadyReduced = Math.abs(productStockHistory[0]?.total_reduced || 0);
+          
+          if (productAlreadyReduced >= item.quantity) {
+            // Stock was already reduced for this product, skip
+            logger.info(`Stock already reduced for product ${item.product_id} in invoice ${id}`);
+            continue;
+          }
+          
+          const remainingToReduce = item.quantity - productAlreadyReduced;
+          
+          if (currentStock < remainingToReduce) {
+            throw new AppError(`Insufficient stock for product ID ${item.product_id}. Available: ${currentStock}, Required: ${remainingToReduce}`, 400);
+          }
+          
+          const newStock = currentStock - remainingToReduce;
+          
+          await connection.query(
+            "UPDATE products SET stock_quantity = ? WHERE id = ?",
+            [newStock, item.product_id]
+          );
+          
+          // Record stock history
+          await connection.query(
+            `INSERT INTO stock_history 
+             (product_id, user_id, change_type, quantity_change, previous_quantity, new_quantity, reason, reference_type, reference_id)
+             VALUES (?, (SELECT user_id FROM invoices WHERE id = ?), 'sale', ?, ?, ?, 'Order shipped', 'invoice', ?)`,
+            [item.product_id, id, -remainingToReduce, currentStock, newStock, id]
+          );
+          
+          logger.info(`Stock reduced for product ${item.product_id}: ${currentStock} -> ${newStock} (Invoice ${id})`);
+        }
+      } else if (status === "cancelled" && (oldStatus === "paid" || oldStatus === "shipped")) {
+        // Restore stock when cancelling a paid or shipped order
+        for (const item of items) {
+          const [productRows] = await connection.query(
+            "SELECT stock_quantity FROM products WHERE id = ? FOR UPDATE",
+            [item.product_id]
+          );
+          
+          if (productRows.length === 0) {
+            throw new AppError(`Product with ID ${item.product_id} not found`, 404);
+          }
+          
+          const currentStock = productRows[0].stock_quantity;
+          const newStock = currentStock + item.quantity;
+          
+          await connection.query(
+            "UPDATE products SET stock_quantity = ? WHERE id = ?",
+            [newStock, item.product_id]
+          );
+          
+          // Record stock history
+          await connection.query(
+            `INSERT INTO stock_history 
+             (product_id, user_id, change_type, quantity_change, previous_quantity, new_quantity, reason, reference_type, reference_id)
+             VALUES (?, (SELECT user_id FROM invoices WHERE id = ?), 'adjustment', ?, ?, ?, 'Order cancelled', 'invoice', ?)`,
+            [item.product_id, id, item.quantity, currentStock, newStock, id]
+          );
+          
+          logger.info(`Stock restored for product ${item.product_id}: ${currentStock} -> ${newStock} (Invoice ${id} cancelled)`);
+        }
+      }
+
+      // Update invoice status
+      await connection.query("UPDATE invoices SET status = ? WHERE id = ?", [status, id]);
+
+      await connection.commit();
 
       const invoice = await this.getInvoiceById(id);
-      logger.info(`Invoice status updated: ID ${id} -> ${status}`);
+      logger.info(`Invoice status updated: ID ${id} -> ${status} (from ${oldStatus})`);
 
       return invoice;
     } catch (error) {
+      await connection.rollback();
       logger.error("Error updating invoice:", error);
+      if (error.statusCode) throw error;
       throw new AppError("Failed to update invoice", 500);
+    } finally {
+      connection.release();
     }
   }
 
