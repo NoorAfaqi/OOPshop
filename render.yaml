@@ -1,0 +1,84 @@
+# Render Blueprint for OOPshop
+# This file allows Render to automatically deploy your services
+# Documentation: https://render.com/docs/blueprint-spec
+
+services:
+  # Backend API Service
+  - type: web
+    name: oopshop-backend
+    env: node
+    plan: starter  # Can upgrade to standard/pro for production
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+        fromService:
+          type: web
+          name: oopshop-backend
+          property: port
+      - key: DB_HOST
+        sync: false  # Set this in Render dashboard
+      - key: DB_PORT
+        value: 3306
+        sync: false
+      - key: DB_USER
+        sync: false  # Set this in Render dashboard
+      - key: DB_PASSWORD
+        sync: false  # Set this in Render dashboard (mark as secret)
+      - key: DB_NAME
+        sync: false  # Set this in Render dashboard
+      - key: DB_CONNECTION_LIMIT
+        value: 10
+      - key: JWT_SECRET
+        generateValue: true  # Render will generate a secure secret
+      - key: JWT_EXPIRES_IN
+        value: 24h
+      - key: CORS_ORIGIN
+        fromService:
+          type: web
+          name: oopshop-frontend
+          property: host
+      - key: SKIP_MIGRATIONS
+        value: "false"  # Set to "true" if using external database with existing schema
+    healthCheckPath: /health
+
+  # Frontend Next.js Service
+  - type: web
+    name: oopshop-frontend
+    env: node
+    plan: starter  # Can upgrade to standard/pro for production
+    buildCommand: cd frontend && npm install && npm run build
+    startCommand: cd frontend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: oopshop-backend
+          property: host
+      - key: PORT
+        value: 3000
+        fromService:
+          type: web
+          name: oopshop-frontend
+          property: port
+    healthCheckPath: /
+
+# Optional: PostgreSQL Database (if you want to use Render's managed database)
+# Note: Your app uses MySQL, so you'll need to either:
+# 1. Use an external MySQL database (recommended)
+# 2. Migrate to PostgreSQL
+# 3. Use Render's MySQL alternative (if available)
+#
+# Uncomment below if you want to use Render's PostgreSQL:
+#
+# databases:
+#   - name: oopshop-db
+#     plan: starter
+#     databaseName: oopshop
+#     user: oopshop_user
+
