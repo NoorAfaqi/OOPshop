@@ -14,7 +14,6 @@ services:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 5000
         fromService:
           type: web
           name: oopshop-backend
@@ -22,8 +21,7 @@ services:
       - key: DB_HOST
         sync: false  # Set this in Render dashboard
       - key: DB_PORT
-        value: 3306
-        sync: false
+        sync: false  # Set this in Render dashboard (default: 3306)
       - key: DB_USER
         sync: false  # Set this in Render dashboard
       - key: DB_PASSWORD
@@ -31,11 +29,11 @@ services:
       - key: DB_NAME
         sync: false  # Set this in Render dashboard
       - key: DB_CONNECTION_LIMIT
-        value: 10
+        value: "10"
       - key: JWT_SECRET
         generateValue: true  # Render will generate a secure secret
       - key: JWT_EXPIRES_IN
-        value: 24h
+        value: "24h"
       - key: CORS_ORIGIN
         fromService:
           type: web
@@ -61,7 +59,6 @@ services:
           name: oopshop-backend
           property: host
       - key: PORT
-        value: 3000
         fromService:
           type: web
           name: oopshop-frontend
