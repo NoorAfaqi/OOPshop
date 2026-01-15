@@ -2,13 +2,18 @@
 
 ## Table of Contents
 1. [Overview](#overview)
-2. [Backend Architecture](#backend-architecture)
-3. [Frontend Architecture](#frontend-architecture)
-4. [Security](#security)
-5. [API Documentation](#api-documentation)
-6. [Database Schema](#database-schema)
-7. [Deployment](#deployment)
-8. [Best Practices](#best-practices)
+2. [Architecture Pattern](#architecture-pattern)
+3. [Backend Architecture](#backend-architecture)
+4. [Frontend Architecture](#frontend-architecture)
+5. [Security](#security)
+6. [API Documentation](#api-documentation)
+7. [Database Schema](#database-schema)
+8. [Deployment](#deployment)
+9. [Best Practices](#best-practices)
+
+> 📚 **For detailed information about architecture patterns and their strengths, see [docs/ARCHITECTURE_PATTERNS.md](./docs/ARCHITECTURE_PATTERNS.md)**
+
+> 📁 **For project structure details, see [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)**
 
 ---
 
@@ -29,6 +34,28 @@ OOPshop is a modern, scalable e-commerce platform built with a clear separation 
 - TypeScript
 - Material-UI (MUI)
 - Client-side state management
+
+---
+
+## Architecture Pattern
+
+OOPshop uses **MVC (Model-View-Controller)** architecture for the backend and **Component-Based Architecture** with Service Layer for the frontend.
+
+### Backend: MVC Pattern
+
+- **Model**: Services layer containing business logic and data access
+- **View**: JSON responses (RESTful API)
+- **Controller**: Request handlers that process HTTP requests and coordinate with services
+
+### Frontend: Component-Based with Service Layer
+
+- **Components**: React components (View)
+- **Services**: API communication layer
+- **Hooks**: State management and reusable logic
+
+> 📚 **For detailed information about architecture patterns and their strengths, see [docs/ARCHITECTURE_PATTERNS.md](./docs/ARCHITECTURE_PATTERNS.md)**
+
+> 📁 **For project structure details, see [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)**
 
 ---
 

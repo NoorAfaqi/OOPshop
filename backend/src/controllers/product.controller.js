@@ -49,6 +49,13 @@ const { asyncHandler } = require("../middleware/errorHandler");
 const getAllProducts = asyncHandler(async (req, res) => {
   const result = await productService.getAllProducts(req.query);
   
+  // Add cache headers for GET requests (products don't change frequently)
+  // Cache for 5 minutes, but allow revalidation
+  res.set({
+    'Cache-Control': 'public, max-age=300, must-revalidate',
+    'ETag': `"products-${Date.now()}"`
+  });
+  
   // Always return paginated response format
   if (result.pagination) {
     const { paginatedResponse } = require("../utils/response");
@@ -100,7 +107,15 @@ const getAllProducts = asyncHandler(async (req, res) => {
  *               $ref: '#/components/schemas/Error'
  */
 const getProductById = asyncHandler(async (req, res) => {
-  const product = await productService.getProductById(req.params.id);
+  const productId = parseInt(req.params.id, 10);
+  const product = await productService.getProductById(productId);
+  
+  // Add cache headers for individual product GET requests
+  res.set({
+    'Cache-Control': 'public, max-age=300, must-revalidate',
+    'ETag': `"product-${productId}-${product.updated_at || Date.now()}"`
+  });
+  
   successResponse(res, product, "Product fetched successfully");
 });
 
@@ -200,7 +215,8 @@ const createProduct = asyncHandler(async (req, res) => {
  *                   $ref: '#/components/schemas/Product'
  */
 const updateProduct = asyncHandler(async (req, res) => {
-  const product = await productService.updateProduct(req.params.id, req.body);
+  const productId = parseInt(req.params.id, 10);
+  const product = await productService.updateProduct(productId, req.body);
   successResponse(res, product, "Product updated successfully");
 });
 
@@ -225,7 +241,8 @@ const updateProduct = asyncHandler(async (req, res) => {
  *         description: Product deleted successfully
  */
 const deleteProduct = asyncHandler(async (req, res) => {
-  await productService.deleteProduct(req.params.id);
+  const productId = parseInt(req.params.id, 10);
+  await productService.deleteProduct(productId);
   successResponse(res, null, "Product deleted successfully");
 });
 
@@ -329,7 +346,8 @@ const searchProductsByName = asyncHandler(async (req, res) => {
  *         description: Stock adjusted successfully
  */
 const adjustStock = asyncHandler(async (req, res) => {
-  const product = await productService.adjustStock(req.params.id, {
+  const productId = parseInt(req.params.id, 10);
+  const product = await productService.adjustStock(productId, {
     ...req.body,
     user_id: req.user.id,
   });
@@ -361,7 +379,8 @@ const adjustStock = asyncHandler(async (req, res) => {
  *         description: Stock history
  */
 const getStockHistory = asyncHandler(async (req, res) => {
-  const history = await productService.getStockHistory(req.params.id, parseInt(req.query.limit) || 50);
+  const productId = parseInt(req.params.id, 10);
+  const history = await productService.getStockHistory(productId, parseInt(req.query.limit) || 50);
   successResponse(res, history, "Stock history fetched successfully");
 });
 

@@ -30,6 +30,12 @@ const createRateLimiter = (windowMs = 15 * 60 * 1000, max = 100) => {
     message: "Too many requests from this IP, please try again later.",
     standardHeaders: true,
     legacyHeaders: false,
+    // Skip rate limiting for health checks
+    skip: (req) => req.path === '/health',
+    // Use IP address for rate limiting
+    keyGenerator: (req) => {
+      return req.ip || req.connection.remoteAddress || 'unknown';
+    },
   });
 };
 
@@ -45,10 +51,21 @@ const authLimiter = createRateLimiter(15 * 60 * 1000, 5);
 // CORS configuration - supports both web and mobile
 const getCorsOrigin = () => {
   const corsOrigin = process.env.CORS_ORIGIN;
+  const isProduction = process.env.NODE_ENV === "production";
+  
+  // In production, CORS_ORIGIN must be set
+  if (isProduction && !corsOrigin) {
+    throw new Error("CORS_ORIGIN must be set in production environment");
+  }
   
   // If CORS_ORIGIN is not set, allow all origins in development (for mobile testing)
   if (!corsOrigin) {
-    return process.env.NODE_ENV === "production" ? "http://localhost:3000" : true;
+    return true;
+  }
+  
+  // In production, warn if CORS_ORIGIN is too permissive
+  if (isProduction && corsOrigin === "*") {
+    console.warn("⚠️  WARNING: CORS_ORIGIN is set to '*' in production. This is insecure!");
   }
   
   // If CORS_ORIGIN is "*", allow all origins

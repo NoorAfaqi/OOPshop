@@ -16,6 +16,7 @@ A **scalable, secure, and production-ready** e-commerce platform built with mode
 - 📦 Invoice management
 - 💰 Payment processing
 - 📊 Dashboard and reporting
+- 📧 **Email Notifications** - Automated emails for order placed and shipped
 - 🔐 JWT authentication and authorization
 - 🔒 Role-based access control
 - 🔍 **OpenFoodFacts API Integration** - Import products by barcode with nutritional info
@@ -76,18 +77,21 @@ npm run dev
 - Backend API: http://localhost:3001
 - API Documentation: http://localhost:3001/api-docs
 
-For detailed setup instructions, see [SETUP_GUIDE.md](SETUP_GUIDE.md)
+For detailed setup instructions, see [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md)
 
 ## 📚 Documentation
 
-| Document | Description |
-|----------|-------------|
-| [SETUP_GUIDE.md](SETUP_GUIDE.md) | Complete setup and installation guide |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Comprehensive architecture documentation |
-| [ARCHITECTURE_DIAGRAM.md](ARCHITECTURE_DIAGRAM.md) | Visual architecture diagrams |
-| [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) | Project overview and accomplishments |
-| [backend/README.md](backend/README.md) | Backend-specific documentation |
-| [frontend/README.md](frontend/README.md) | Frontend-specific documentation |
+All documentation is organized in the `docs/` directory. See [docs/README.md](docs/README.md) for a complete index.
+
+### Quick Links
+- **[docs/README.md](docs/README.md)** - Documentation index
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Main architecture documentation
+- **[docs/ARCHITECTURE_PATTERNS.md](docs/ARCHITECTURE_PATTERNS.md)** - Architecture patterns and strengths
+- **[docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md)** - Setup and installation guide
+- **[docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md)** - Testing documentation
+- **[docs/DOCKER_SETUP.md](docs/DOCKER_SETUP.md)** - Docker setup guide
+- **[docs/RENDER_DEPLOYMENT.md](docs/RENDER_DEPLOYMENT.md)** - Deployment guide
+- **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Project structure overview
 
 ## 🏗️ Project Structure
 

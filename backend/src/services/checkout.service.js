@@ -1,6 +1,7 @@
 const pool = require("../config/database");
 const { AppError } = require("../middleware/errorHandler");
 const logger = require("../config/logger");
+const emailService = require("./email.service");
 
 class CheckoutService {
   /**
@@ -80,14 +81,21 @@ class CheckoutService {
         userId = userResult.insertId;
       }
       
+      // Batch fetch all products at once to avoid N+1 queries
+      const productIds = items.map(item => item.product_id);
+      const placeholders = productIds.map(() => '?').join(',');
+      const [productRows] = await connection.query(
+        `SELECT id, price, stock_quantity FROM products WHERE id IN (${placeholders}) FOR UPDATE`,
+        productIds
+      );
+
+      // Create a map for O(1) lookup
+      const productMap = new Map(productRows.map(p => [p.id, p]));
+
       // Calculate total and validate stock (but don't reduce it yet - will be reduced when shipped)
       let total = 0;
       for (const item of items) {
-        const [rows] = await connection.query(
-          "SELECT price, stock_quantity FROM products WHERE id = ? FOR UPDATE",
-          [item.product_id]
-        );
-        const product = rows[0];
+        const product = productMap.get(item.product_id);
         
         if (!product) {
           throw new AppError(`Product with ID ${item.product_id} not found`, 404);
@@ -109,16 +117,18 @@ class CheckoutService {
       );
       const invoiceId = invoiceResult.insertId;
       
-      // Create invoice items
-      for (const item of items) {
-        const [rows] = await connection.query(
-          "SELECT price FROM products WHERE id = ?",
-          [item.product_id]
-        );
-        const product = rows[0];
+      // Batch insert invoice items
+      const invoiceItemValues = items.map(item => {
+        const product = productMap.get(item.product_id);
+        return [invoiceId, item.product_id, item.quantity, product.price];
+      });
+      
+      if (invoiceItemValues.length > 0) {
+        const itemPlaceholders = invoiceItemValues.map(() => '(?, ?, ?, ?)').join(',');
+        const flatValues = invoiceItemValues.flat();
         await connection.query(
-          "INSERT INTO invoice_items (invoice_id, product_id, quantity, unit_price) VALUES (?, ?, ?, ?)",
-          [invoiceId, item.product_id, item.quantity, product.price]
+          `INSERT INTO invoice_items (invoice_id, product_id, quantity, unit_price) VALUES ${itemPlaceholders}`,
+          flatValues
         );
       }
       
@@ -130,9 +140,33 @@ class CheckoutService {
         [invoiceId]
       );
       
+      const invoice = invoiceRows[0];
+      
       logger.info(`Checkout processed: Invoice ${invoiceId} for user ${userId}`);
       
-      return invoiceRows[0];
+      // Send order confirmation email (non-blocking)
+      // Fetch user and items for email after transaction commits
+      const [userRows] = await pool.query(
+        "SELECT id, email, first_name, last_name FROM users WHERE id = ?",
+        [userId]
+      );
+      const user = userRows[0];
+      
+      if (user && user.email) {
+        const [itemsRows] = await pool.query(
+          `SELECT ii.*, p.name
+           FROM invoice_items ii
+           JOIN products p ON p.id = ii.product_id
+           WHERE ii.invoice_id = ?`,
+          [invoiceId]
+        );
+        
+        emailService.sendOrderPlacedEmail(invoice, user, itemsRows).catch((err) => {
+          logger.error('Failed to send order placed email', { invoiceId, error: err.message });
+        });
+      }
+      
+      return invoice;
     } catch (error) {
       await connection.rollback();
       logger.error("Checkout error:", error);

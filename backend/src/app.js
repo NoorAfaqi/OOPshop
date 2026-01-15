@@ -1,6 +1,8 @@
 const express = require("express");
 const morgan = require("morgan");
 const dotenv = require("dotenv");
+const compression = require("compression");
+const timeout = require("connect-timeout");
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./config/swagger");
 const logger = require("./config/logger");
@@ -27,15 +29,31 @@ const authMiddleware = require("./middleware/auth");
 
 const app = express();
 
-// Log all incoming requests - temporarily disabled to debug
-// app.use((req, res, next) => {
-//   logger.info(`${req.method} ${req.url}`);
-//   next();
-// });
+// Add request ID middleware for tracking
+app.use((req, res, next) => {
+  req.id = req.headers['x-request-id'] || `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  res.setHeader('X-Request-ID', req.id);
+  next();
+});
 
 // CORS must be first - before any other middleware
 // Supports both web browsers (CORS) and mobile apps (no CORS needed, but headers still sent)
 app.use(corsOptions);
+
+// Request timeout middleware - prevent hanging requests
+app.use(timeout(process.env.REQUEST_TIMEOUT || '30000')); // 30 seconds default
+
+// Compression middleware - compress responses for better performance
+app.use(compression({
+  level: 6, // Compression level (1-9, 6 is a good balance)
+  filter: (req, res) => {
+    // Don't compress if client doesn't support it or if response is already compressed
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  }
+}));
 
 // API Documentation with Swagger - register early to avoid conflicts
 app.use(
@@ -91,10 +109,19 @@ if (process.env.NODE_ENV === "development") {
  *                   format: date-time
  */
 app.get("/health", (req, res) => {
+  // Add cache control headers for health check
+  res.set({
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
+  
   res.json({ 
     status: "ok", 
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || "development"
+    environment: process.env.NODE_ENV || "development",
+    uptime: process.uptime(),
+    memory: process.memoryUsage()
   });
 });
 

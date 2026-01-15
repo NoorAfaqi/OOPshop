@@ -42,7 +42,12 @@ async function runMigrations() {
         nutritional_info JSON,
         stock_quantity INT NOT NULL DEFAULT 0,
         open_food_facts_barcode VARCHAR(50),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_category (category),
+        INDEX idx_brand (brand),
+        INDEX idx_stock_quantity (stock_quantity),
+        INDEX idx_barcode (open_food_facts_barcode),
+        INDEX idx_name (name(100))
       )
     `);
 
@@ -55,7 +60,10 @@ async function runMigrations() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT fk_invoices_user
           FOREIGN KEY (user_id) REFERENCES users(id)
-          ON DELETE RESTRICT
+          ON DELETE RESTRICT,
+        INDEX idx_user_id (user_id),
+        INDEX idx_status (status),
+        INDEX idx_created_at (created_at)
       )
     `);
 
@@ -71,7 +79,9 @@ async function runMigrations() {
           ON DELETE CASCADE,
         CONSTRAINT fk_items_product
           FOREIGN KEY (product_id) REFERENCES products(id)
-          ON DELETE RESTRICT
+          ON DELETE RESTRICT,
+        INDEX idx_invoice_id (invoice_id),
+        INDEX idx_product_id (product_id)
       )
     `);
 
@@ -90,7 +100,11 @@ async function runMigrations() {
           ON DELETE CASCADE,
         CONSTRAINT fk_payments_user
           FOREIGN KEY (user_id) REFERENCES users(id)
-          ON DELETE RESTRICT
+          ON DELETE RESTRICT,
+        INDEX idx_invoice_id (invoice_id),
+        INDEX idx_user_id (user_id),
+        INDEX idx_status (status),
+        INDEX idx_created_at (created_at)
       )
     `);
 

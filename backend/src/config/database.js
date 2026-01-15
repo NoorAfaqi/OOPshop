@@ -4,16 +4,26 @@ const logger = require("./logger");
 
 dotenv.config();
 
+// Optimized database pool configuration for production
 const config = {
   host: process.env.DB_HOST || "localhost",
   user: process.env.DB_USER || "root",
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME || "oopshop",
   waitForConnections: true,
-  connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT) || 10,
+  connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT) || (process.env.NODE_ENV === "production" ? 20 : 10),
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 0,
+  // Production optimizations
+  acquireTimeout: 60000, // 60 seconds
+  timeout: 60000, // 60 seconds
+  reconnect: true,
+  // Enable connection pooling optimizations
+  multipleStatements: false, // Security: prevent SQL injection via multiple statements
+  dateStrings: false, // Use Date objects instead of strings
+  supportBigNumbers: true,
+  bigNumberStrings: false,
 };
 
 let pool;
