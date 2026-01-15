@@ -8,8 +8,9 @@ services:
     name: oopshop-backend
     env: node
     plan: starter  # Can upgrade to standard/pro for production
-    buildCommand: cd backend && npm install
-    startCommand: cd backend && npm start
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
@@ -48,8 +49,9 @@ services:
     name: oopshop-frontend
     env: node
     plan: starter  # Can upgrade to standard/pro for production
-    buildCommand: cd frontend && npm install && npm run build
-    startCommand: cd frontend && npm start
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
