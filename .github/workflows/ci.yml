@@ -3,6 +3,15 @@ name: CI
 # Continuous Integration workflow for OOPshop
 # Runs tests, linting, and builds for both backend and frontend
 # Tests on Node.js 18.x and 20.x for compatibility
+#
+# IMPORTANT: To prevent Render from deploying when CI fails:
+# 1. Go to GitHub repo Settings > Branches > Add rule
+# 2. Set branch name pattern (e.g., main, master)
+# 3. Enable "Require status checks to pass before merging"
+# 4. Select "CI" workflow
+# 5. Enable "Require branches to be up to date before merging"
+# 6. In Render dashboard, configure auto-deploy to wait for GitHub status checks
+#    (if supported) or disable auto-deploy and deploy manually after CI passes
 
 on:
   push:
@@ -126,3 +135,9 @@ jobs:
           PORT: 5000
         run: |
           timeout 10s npm start || true
+      
+      - name: CI Status - Ready for Deployment
+        if: success()
+        run: |
+          echo "✅ All CI checks passed. Ready for deployment."
+          echo "If using Render, ensure it's configured to wait for GitHub status checks."
