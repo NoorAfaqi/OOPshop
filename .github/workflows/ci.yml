@@ -5,13 +5,23 @@ name: CI
 # Tests on Node.js 18.x and 20.x for compatibility
 #
 # IMPORTANT: To prevent Render from deploying when CI fails:
+# 
+# GitHub Branch Protection (Already configured):
 # 1. Go to GitHub repo Settings > Branches > Add rule
 # 2. Set branch name pattern (e.g., main, master)
 # 3. Enable "Require status checks to pass before merging"
-# 4. Select "CI" workflow
+# 4. Select required status checks: "backend-tests", "frontend-tests", "build"
 # 5. Enable "Require branches to be up to date before merging"
-# 6. In Render dashboard, configure auto-deploy to wait for GitHub status checks
-#    (if supported) or disable auto-deploy and deploy manually after CI passes
+#
+# Render Configuration (Required to stop CD on CI failure):
+# 1. Go to Render dashboard > Your Service > Settings
+# 2. Scroll to "Auto-Deploy" section
+# 3. Enable "Wait for CI" or "Wait for GitHub status checks"
+# 4. This will prevent deployment until all required status checks pass
+# 
+# Alternative: If Render doesn't support waiting for status checks:
+# - Disable auto-deploy in Render
+# - Deploy manually only after CI passes
 
 on:
   push:
