@@ -67,7 +67,7 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_NAME: ${{ secrets.DB_NAME }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
-        run: npm run test:coverage
+        run: npm run test
 
   frontend-tests:
     name: Frontend Tests
