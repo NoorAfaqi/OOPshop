@@ -75,6 +75,14 @@ const listProductsValidator = [
     .optional()
     .isInt({ min: 1, max: 1000 })
     .withMessage("Limit must be between 1 and 1000"),
+  query("sortBy")
+    .optional()
+    .isIn(["name", "price", "created_at", "stock_quantity"])
+    .withMessage("Sort by must be one of: name, price, created_at, stock_quantity"),
+  query("sortOrder")
+    .optional()
+    .isIn(["asc", "desc", "ASC", "DESC"])
+    .withMessage("Sort order must be 'asc' or 'desc'"),
 ];
 
 const barcodeValidator = [

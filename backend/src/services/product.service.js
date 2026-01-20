@@ -52,7 +52,7 @@ class ProductService {
    */
   async getAllProducts(filters = {}) {
     try {
-      const { q, category, brand, available, page = 1, limit = 12 } = filters;
+      const { q, category, brand, available, page = 1, limit = 12, sortBy = "created_at", sortOrder = "desc" } = filters;
       const conditions = [];
       const params = [];
       
@@ -74,6 +74,11 @@ class ProductService {
       
       const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
       
+      // Validate and sanitize sort parameters
+      const validSortFields = ["name", "price", "created_at", "stock_quantity"];
+      const sortField = validSortFields.includes(sortBy) ? sortBy : "created_at";
+      const order = (sortOrder && sortOrder.toLowerCase() === "asc") ? "ASC" : "DESC";
+      
       // Get total count
       const [countRows] = await pool.query(
         `SELECT COUNT(*) as total FROM products ${where}`,
@@ -86,9 +91,9 @@ class ProductService {
       const limitNum = parseInt(limit) || 12;
       const offset = (pageNum - 1) * limitNum;
       
-      // Get paginated results
+      // Get paginated results with sorting
       const [rows] = await pool.query(
-        `SELECT * FROM products ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+        `SELECT * FROM products ${where} ORDER BY ${sortField} ${order} LIMIT ? OFFSET ?`,
         [...params, limitNum, offset]
       );
       

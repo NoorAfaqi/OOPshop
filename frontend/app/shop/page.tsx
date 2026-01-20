@@ -70,6 +70,10 @@ export default function ShopPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [categories, setCategories] = useState<string[]>([]);
   const [brands, setBrands] = useState<string[]>([]);
+  
+  // Sorting state
+  const [sortBy, setSortBy] = useState<string>("created_at");
+  const [sortOrder, setSortOrder] = useState<string>("desc");
 
   const loadCart = () => {
     if (typeof window !== "undefined") {
@@ -141,6 +145,8 @@ export default function ShopPage() {
       params.set("available", "true");
       params.set("page", page.toString());
       params.set("limit", limit.toString());
+      params.set("sortBy", sortBy);
+      params.set("sortOrder", sortOrder);
       
       const res = await fetch(`${API_BASE}/products?${params.toString()}`);
       if (!res.ok) {
@@ -197,13 +203,13 @@ export default function ShopPage() {
   };
 
   useEffect(() => {
-    setPage(1); // Reset to first page when filters change
-  }, [search, selectedCategory, selectedBrand]);
+    setPage(1); // Reset to first page when filters or sorting change
+  }, [search, selectedCategory, selectedBrand, sortBy, sortOrder]);
 
   useEffect(() => {
     loadProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit, search, selectedCategory, selectedBrand]);
+  }, [page, limit, search, selectedCategory, selectedBrand, sortBy, sortOrder]);
 
   const addToCart = (product: Product) => {
     setCart((prev) => {
@@ -416,6 +422,38 @@ export default function ShopPage() {
                     {brand}
                   </MenuItem>
                 ))}
+              </TextField>
+            </Box>
+          </Box>
+
+          {/* Sort Options */}
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 2 }}>
+            <Box sx={{ flex: { xs: "1 1 100%", sm: "1 1 calc(50% - 8px)" }, minWidth: { xs: "100%", sm: 0 } }}>
+              <TextField
+                fullWidth
+                select
+                label="Sort By"
+                value={`${sortBy}-${sortOrder}`}
+                onChange={(e) => {
+                  const [field, order] = e.target.value.split("-");
+                  setSortBy(field);
+                  setSortOrder(order);
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "12px",
+                    bgcolor: "white",
+                  },
+                }}
+              >
+                <MenuItem value="created_at-desc">Newest First</MenuItem>
+                <MenuItem value="created_at-asc">Oldest First</MenuItem>
+                <MenuItem value="price-asc">Price: Low to High</MenuItem>
+                <MenuItem value="price-desc">Price: High to Low</MenuItem>
+                <MenuItem value="name-asc">Name: A to Z</MenuItem>
+                <MenuItem value="name-desc">Name: Z to A</MenuItem>
+                <MenuItem value="stock_quantity-desc">Stock: High to Low</MenuItem>
+                <MenuItem value="stock_quantity-asc">Stock: Low to High</MenuItem>
               </TextField>
             </Box>
           </Box>
