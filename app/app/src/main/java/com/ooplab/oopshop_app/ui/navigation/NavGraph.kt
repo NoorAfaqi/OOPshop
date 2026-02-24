@@ -10,7 +10,6 @@ import androidx.navigation.navArgument
 import com.ooplab.oopshop_app.ui.screens.AdminPanelScreen
 import com.ooplab.oopshop_app.ui.screens.BillingScreen
 import com.ooplab.oopshop_app.ui.screens.ChangePasswordScreen
-import com.ooplab.oopshop_app.ui.screens.CartScreen
 import com.ooplab.oopshop_app.ui.screens.CurrentOrdersScreen
 import com.ooplab.oopshop_app.ui.screens.LoginScreen
 import com.ooplab.oopshop_app.ui.screens.MainScreen
@@ -19,7 +18,6 @@ import com.ooplab.oopshop_app.ui.screens.OrderHistoryScreen
 import com.ooplab.oopshop_app.ui.screens.ProductDetailScreen
 import com.ooplab.oopshop_app.ui.screens.ProfileSettingsScreen
 import com.ooplab.oopshop_app.ui.screens.RegisterScreen
-import com.ooplab.oopshop_app.ui.screens.ShopScreen
 import com.ooplab.oopshop_app.viewmodel.AccountViewModel
 import com.ooplab.oopshop_app.viewmodel.AdminViewModel
 import com.ooplab.oopshop_app.viewmodel.AuthViewModel
@@ -28,7 +26,6 @@ import com.ooplab.oopshop_app.viewmodel.ProductsViewModel
 
 object Routes {
     const val MAIN = "main"
-    const val SHOP = "shop"
     const val PRODUCT_DETAIL = "product/{productId}"
     const val LOGIN = "login"
     const val REGISTER = "register"

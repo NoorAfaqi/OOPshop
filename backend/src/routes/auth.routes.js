@@ -7,12 +7,9 @@ const authMiddleware = require("../middleware/auth");
 
 const router = express.Router();
 
-// Apply rate limiting to auth routes
-router.use(authLimiter);
-
-// Public routes
-router.post("/login", loginValidator, validate, authController.login);
-router.post("/register", registerValidator, validate, authController.register);
+// Strict rate limit only for login/register to prevent brute-force; GET /me uses general limiter
+router.post("/login", authLimiter, loginValidator, validate, authController.login);
+router.post("/register", authLimiter, registerValidator, validate, authController.register);
 
 // Protected routes
 router.get("/me", authMiddleware.requireAuth(), authController.getCurrentUser);

@@ -82,9 +82,7 @@ fun ProfileSettingsScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
-        if (currentUser == null && authViewModel.isLoggedIn()) authViewModel.loadCurrentUser()
-    }
+    // Rely on MainScreen/ProfileScreen to load currentUser; avoid duplicate /auth/me calls (rate limit).
 
     Scaffold(
         modifier = modifier.fillMaxSize(),

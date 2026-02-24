@@ -29,7 +29,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.ooplab.oopshop_app.data.repository.Resource
-import com.ooplab.oopshop_app.ui.components.ErrorView
 import com.ooplab.oopshop_app.ui.components.LoadingView
 import com.ooplab.oopshop_app.ui.components.PrimaryButton
 import com.ooplab.oopshop_app.viewmodel.AuthViewModel
