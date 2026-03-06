@@ -14,6 +14,7 @@ class ProductService {
         brand,
         image_url,
         category,
+        description,
         nutritional_info,
         stock_quantity,
         reorder_point,
@@ -22,14 +23,15 @@ class ProductService {
       
       const [result] = await pool.query(
         `INSERT INTO products
-         (name, price, brand, image_url, category, nutritional_info, stock_quantity, reorder_point, open_food_facts_barcode)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (name, price, brand, image_url, category, description, nutritional_info, stock_quantity, reorder_point, open_food_facts_barcode)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           name,
           price,
           brand,
           image_url,
           category,
+          description || null,
           nutritional_info ? JSON.stringify(nutritional_info) : null,
           stock_quantity || 0,
           reorder_point || 10,
@@ -145,6 +147,7 @@ class ProductService {
         brand,
         image_url,
         category,
+        description,
         nutritional_info,
         stock_quantity,
         reorder_point,
@@ -153,7 +156,7 @@ class ProductService {
       
       await pool.query(
         `UPDATE products SET
-          name = ?, price = ?, brand = ?, image_url = ?, category = ?, 
+          name = ?, price = ?, brand = ?, image_url = ?, category = ?, description = ?,
           nutritional_info = ?, stock_quantity = ?, reorder_point = ?, open_food_facts_barcode = ?
          WHERE id = ?`,
         [
@@ -162,6 +165,7 @@ class ProductService {
           brand,
           image_url,
           category,
+          description !== undefined ? description : null,
           nutritional_info ? JSON.stringify(nutritional_info) : null,
           stock_quantity,
           reorder_point !== undefined ? reorder_point : null,
