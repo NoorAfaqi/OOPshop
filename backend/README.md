@@ -15,9 +15,11 @@ cp .env.example .env
 # Run migrations
 npm run migrate
 
-# Start development server
+# Start development server (listens on port 3001 by default for Android app)
 npm run dev
 ```
+
+**Port:** The server defaults to **port 3001** (so the Android app and frontend can connect). In `.env`, set `PORT=3001` or leave `PORT` unset. On macOS, **port 5000 is often used by AirPlay Receiver** (Control Center); if you see `EADDRINUSE: address already in use :::5000`, set `PORT=3001` in `backend/.env` and restart.
 
 ## 📁 Project Structure
 
