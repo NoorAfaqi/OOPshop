@@ -90,6 +90,27 @@ describe('Product Controller', () => {
         .get('/products/999')
         .expect(404);
     });
+
+    it('should return product with description and nutritional_info when present', async () => {
+      const mockProduct = {
+        id: 1,
+        name: 'Test Product',
+        price: 10.99,
+        stock_quantity: 100,
+        description: 'A healthy snack.',
+        nutritional_info: { energy_kcal: 100, fat: 5 }
+      };
+
+      sinon.stub(productService, 'getProductById').resolves(mockProduct);
+
+      const response = await request(app)
+        .get('/products/1')
+        .expect(200);
+
+      expect(response.body.status).to.equal('success');
+      expect(response.body.data.description).to.equal('A healthy snack.');
+      expect(response.body.data.nutritional_info).to.deep.equal({ energy_kcal: 100, fat: 5 });
+    });
   });
 
   describe('POST /products', () => {
@@ -128,6 +149,30 @@ describe('Product Controller', () => {
 
       expect(response.body).to.exist;
       expect(response.body.message || response.body.status).to.exist;
+    });
+
+    it('should create a product with description and nutritional_info', async () => {
+      const newProduct = {
+        name: 'Test Product',
+        price: 1.99,
+        description: 'A test product',
+        nutritional_info: { energy_kcal: 100 }
+      };
+
+      const createdProduct = { id: 1, ...newProduct };
+
+      sinon.stub(productService, 'createProduct').resolves(createdProduct);
+
+      const response = await request(app)
+        .post('/products')
+        .set('Authorization', 'Bearer mock-token')
+        .send(newProduct)
+        .expect(201);
+
+      expect(response.body.status).to.equal('success');
+      expect(response.body.data.description).to.equal('A test product');
+      expect(response.body.data.nutritional_info).to.deep.equal({ energy_kcal: 100 });
+      expect(productService.createProduct).to.have.been.calledWith(newProduct);
     });
   });
 
