@@ -23,6 +23,14 @@ const createProductValidator = [
     .optional()
     .isLength({ max: 255 })
     .withMessage("Category must not exceed 255 characters"),
+  body("description")
+    .optional()
+    .isLength({ max: 2000 })
+    .withMessage("Description must not exceed 2000 characters"),
+  body("nutritional_info")
+    .optional()
+    .isObject()
+    .withMessage("Nutritional info must be an object"),
   body("stock_quantity")
     .optional()
     .isInt({ min: 0 })
