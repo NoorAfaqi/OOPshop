@@ -9,7 +9,12 @@ const app = require("./app");
 const logger = require("./config/logger");
 const pool = require("./config/database");
 
-const PORT = process.env.PORT || 5000;
+// Default 3001 for Android app / frontend. If .env has PORT=5000, use 3001 instead (macOS AirPlay uses 5000).
+let PORT = parseInt(process.env.PORT, 10) || 3001;
+if (PORT === 5000) {
+  PORT = 3001;
+  logger.info("Port 5000 is often in use on macOS (AirPlay). Using 3001 instead.");
+}
 
 // Handle unhandled promise rejections
 process.on("unhandledRejection", (err) => {
