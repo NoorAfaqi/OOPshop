@@ -1,12 +1,14 @@
 const bcrypt = require("bcrypt");
 const pool = require("../src/config/database");
 
+// Product-level fields only: each product has its own name, price, category, description, nutritional_info, etc.
 const sampleProducts = [
   {
     name: "Organic Apples",
     price: 3.99,
     brand: "Fresh Farms",
     category: "Fruits",
+    description: "Crisp, sweet organic apples perfect for snacking or baking. Grown without synthetic pesticides.",
     image_url: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400",
     stock_quantity: 50,
     nutritional_info: {
@@ -26,6 +28,7 @@ const sampleProducts = [
     price: 2.49,
     brand: "Bakery Fresh",
     category: "Bakery",
+    description: "Hearty whole wheat loaf baked fresh daily. High in fiber and ideal for sandwiches or toast.",
     image_url: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400",
     stock_quantity: 30,
     nutritional_info: {
@@ -45,6 +48,7 @@ const sampleProducts = [
     price: 4.99,
     brand: "Dairy Pure",
     category: "Dairy",
+    description: "Fresh organic milk from grass-fed cows. Rich in calcium and vitamin D.",
     image_url: "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400",
     stock_quantity: 25,
     nutritional_info: {
@@ -63,6 +67,7 @@ const sampleProducts = [
     price: 2.99,
     brand: "Green Valley",
     category: "Vegetables",
+    description: "Tender leafy spinach, great for salads, smoothies, or cooked dishes. Packed with iron and vitamins.",
     image_url: "https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400",
     stock_quantity: 40,
     nutritional_info: {
@@ -82,6 +87,7 @@ const sampleProducts = [
     price: 5.49,
     brand: "Creamy Delight",
     category: "Dairy",
+    description: "Thick, creamy Greek yogurt with live cultures. High in protein and perfect for breakfast or snacks.",
     image_url: "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400",
     stock_quantity: 35,
     nutritional_info: {
@@ -100,6 +106,7 @@ const sampleProducts = [
     price: 8.99,
     brand: "Farm Fresh",
     category: "Meat",
+    description: "Lean, skinless chicken breast. High in protein and versatile for grilling, baking, or stir-frying.",
     image_url: "https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=400",
     stock_quantity: 20,
     nutritional_info: {
@@ -117,6 +124,7 @@ const sampleProducts = [
     price: 3.49,
     brand: "Golden Grain",
     category: "Grains",
+    description: "Whole grain brown rice with a nutty flavor. Good source of fiber and minerals.",
     image_url: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400",
     stock_quantity: 45,
     nutritional_info: {
@@ -135,6 +143,7 @@ const sampleProducts = [
     price: 12.99,
     brand: "Ocean Fresh",
     category: "Seafood",
+    description: "Fresh Atlantic salmon fillet, rich in omega-3 fatty acids. Perfect for baking or pan-searing.",
     image_url: "https://images.unsplash.com/photo-1544943910-04c1e2c5e4b6?w=400",
     stock_quantity: 15,
     nutritional_info: {
@@ -152,6 +161,7 @@ const sampleProducts = [
     price: 1.99,
     brand: "Tropical",
     category: "Fruits",
+    description: "Ripe, sweet bananas. Great for eating fresh, in smoothies, or for baking.",
     image_url: "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=400",
     stock_quantity: 60,
     nutritional_info: {
@@ -171,6 +181,7 @@ const sampleProducts = [
     price: 7.99,
     brand: "Mediterranean",
     category: "Oils",
+    description: "Extra virgin olive oil, cold-pressed. Ideal for dressings, cooking, and dipping.",
     image_url: "https://images.unsplash.com/photo-1474979266404-7eaacbcd8692?w=400",
     stock_quantity: 28,
     nutritional_info: {
@@ -188,6 +199,7 @@ const sampleProducts = [
     price: 2.79,
     brand: "Garden Fresh",
     category: "Vegetables",
+    description: "Vine-ripened tomatoes, perfect for salads, sauces, or slicing. A kitchen staple.",
     image_url: "https://images.unsplash.com/photo-1546470427-e26264be0b2b?w=400",
     stock_quantity: 55,
     nutritional_info: {
@@ -207,6 +219,7 @@ const sampleProducts = [
     price: 4.49,
     brand: "Farm Fresh",
     category: "Dairy",
+    description: "Farm-fresh eggs, a dozen. Excellent source of protein and essential nutrients.",
     image_url: "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=400",
     stock_quantity: 38,
     nutritional_info: {
@@ -281,14 +294,15 @@ async function seedDatabase() {
         }
 
         await pool.query(
-          `INSERT INTO products (name, price, brand, image_url, category, nutritional_info, stock_quantity)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO products (name, price, brand, image_url, category, description, nutritional_info, stock_quantity)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             product.name,
             product.price,
             product.brand,
             product.image_url,
             product.category,
+            product.description || null,
             JSON.stringify(product.nutritional_info),
             product.stock_quantity,
           ]
@@ -298,6 +312,20 @@ async function seedDatabase() {
       } catch (err) {
         console.error(`   ✗ Error creating ${product.name}:`, err.message);
       }
+    }
+
+    // Backfill description for existing products that have none (product-level only)
+    let descriptionsUpdated = 0;
+    for (const product of sampleProducts) {
+      if (!product.description) continue;
+      const [updateResult] = await pool.query(
+        `UPDATE products SET description = ? WHERE name = ? AND brand = ? AND (description IS NULL OR description = '')`,
+        [product.description, product.name, product.brand]
+      );
+      if (updateResult.affectedRows > 0) descriptionsUpdated += updateResult.affectedRows;
+    }
+    if (descriptionsUpdated > 0) {
+      console.log(`   Descriptions backfilled: ${descriptionsUpdated} existing product(s)\n`);
     }
 
     console.log(`\n✅ Products seeding completed:`);
