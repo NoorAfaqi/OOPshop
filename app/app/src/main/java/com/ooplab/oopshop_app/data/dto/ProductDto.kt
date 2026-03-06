@@ -14,6 +14,7 @@ data class ProductDto(
     val brand: String? = null,
     @SerializedName("image_url") val imageUrl: String? = null,
     val category: String? = null,
+    val description: String? = null,
     @SerializedName("nutritional_info")
     @JsonAdapter(NutritionalInfoDeserializer::class)
     val nutritionalInfo: Map<String, Any>? = null,
