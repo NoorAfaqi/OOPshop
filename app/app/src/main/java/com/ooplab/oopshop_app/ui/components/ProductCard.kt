@@ -22,9 +22,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
 import com.ooplab.oopshop_app.data.dto.ProductDto
+import com.ooplab.oopshop_app.ui.components.ProductImagePlaceholder
 
 /**
  * Reusable product card for list/grid. Shows image, name, price; click navigates to detail.
@@ -46,25 +48,32 @@ fun ProductCard(
     ) {
         Column(modifier = Modifier.padding(0.dp)) {
             val imageUrl = product.imageUrl
+            val imageModifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
             if (!imageUrl.isNullOrBlank()) {
-                AsyncImage(
+                SubcomposeAsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(imageUrl)
                         .crossfade(true)
                         .build(),
                     contentDescription = product.name,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
-                        .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
-                    contentScale = ContentScale.Crop
+                    modifier = imageModifier,
+                    contentScale = ContentScale.Crop,
+                    loading = {
+                        ProductImagePlaceholder(modifier = imageModifier, iconSizeDp = 40, showLabel = true)
+                    },
+                    success = { SubcomposeAsyncImageContent() },
+                    error = {
+                        ProductImagePlaceholder(modifier = imageModifier, iconSizeDp = 40, showLabel = true)
+                    }
                 )
             } else {
-                Spacer(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                ProductImagePlaceholder(
+                    modifier = imageModifier,
+                    iconSizeDp = 40,
+                    showLabel = true
                 )
             }
             Column(modifier = Modifier.padding(12.dp)) {
