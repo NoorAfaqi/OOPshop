@@ -40,12 +40,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
 import com.ooplab.oopshop_app.data.dto.ProductDto
 import com.ooplab.oopshop_app.data.repository.Resource
 import com.ooplab.oopshop_app.ui.components.ErrorView
 import com.ooplab.oopshop_app.ui.components.LoadingView
+import com.ooplab.oopshop_app.ui.components.ProductImagePlaceholder
 import com.ooplab.oopshop_app.ui.components.showToast
 import com.ooplab.oopshop_app.viewmodel.ProductsViewModel
 
@@ -193,26 +195,32 @@ private fun ProductDetailContent(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 val imageUrl = product.imageUrl
+                val detailImageModifier = Modifier
+                    .fillMaxWidth()
+                    .height(240.dp)
+                    .clip(RoundedCornerShape(12.dp))
                 if (!imageUrl.isNullOrBlank()) {
-                    AsyncImage(
+                    SubcomposeAsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(imageUrl)
                             .crossfade(true)
                             .build(),
                         contentDescription = product.name,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(240.dp)
-                            .clip(RoundedCornerShape(12.dp)),
-                        contentScale = ContentScale.Crop
+                        modifier = detailImageModifier,
+                        contentScale = ContentScale.Crop,
+                        loading = {
+                            ProductImagePlaceholder(modifier = detailImageModifier, iconSizeDp = 64, showLabel = true)
+                        },
+                        success = { SubcomposeAsyncImageContent() },
+                        error = {
+                            ProductImagePlaceholder(modifier = detailImageModifier, iconSizeDp = 64, showLabel = true)
+                        }
                     )
                 } else {
-                    Spacer(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(240.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                    ProductImagePlaceholder(
+                        modifier = detailImageModifier,
+                        iconSizeDp = 64,
+                        showLabel = true
                     )
                 }
                 Text(
