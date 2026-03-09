@@ -74,15 +74,16 @@ fun ProductCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                product.description?.takeIf { it.isNotBlank() }?.let { desc ->
-                    val snippet = if (desc.length > 80) desc.take(80) + "..." else desc
-                    Text(
-                        text = snippet,
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
+                Column(modifier = Modifier.height(20.dp).fillMaxWidth()) {
+                    product.description?.takeIf { it.isNotBlank() }?.let { desc ->
+                        val snippet = if (desc.length > 80) desc.take(80) + "..." else desc
+                        Text(
+                            text = snippet,
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
