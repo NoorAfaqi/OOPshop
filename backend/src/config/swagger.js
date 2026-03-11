@@ -80,9 +80,13 @@ const options = {
               type: "string",
               description: "Product category",
             },
+            description: {
+              type: "string",
+              description: "Product description",
+            },
             nutritional_info: {
               type: "object",
-              description: "Nutritional information (JSON)",
+              description: "Nutritional information (JSON). May contain energy_kcal, fat, carbohydrates, proteins, etc.",
             },
             stock_quantity: {
               type: "integer",
