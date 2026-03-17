@@ -28,4 +28,10 @@ interface ProductApi {
     suspend fun getProductById(
         @Path("id") id: Int
     ): Response<ApiResponse<ProductDto>>
+
+    /** Low stock products (auth required). GET /products/low-stock */
+    @GET("products/low-stock")
+    suspend fun getLowStockProducts(
+        @Query("threshold") threshold: Int? = null
+    ): Response<ApiResponse<List<ProductDto>>>
 }

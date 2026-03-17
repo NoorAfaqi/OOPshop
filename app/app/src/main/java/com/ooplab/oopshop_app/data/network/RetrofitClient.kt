@@ -9,6 +9,7 @@ import com.ooplab.oopshop_app.data.api.InvoicesApi
 import com.ooplab.oopshop_app.data.api.PaymentApi
 import com.ooplab.oopshop_app.data.api.ProductApi
 import com.ooplab.oopshop_app.data.api.ReportsApi
+import com.ooplab.oopshop_app.data.api.UsersApi
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -65,6 +66,7 @@ object RetrofitClient {
     val paymentApi: PaymentApi get() = retrofit.create(PaymentApi::class.java)
     val reportsApi: ReportsApi get() = retrofit.create(ReportsApi::class.java)
     val invoicesApi: InvoicesApi get() = retrofit.create(InvoicesApi::class.java)
+    val usersApi: UsersApi get() = retrofit.create(UsersApi::class.java)
 
     fun setAuthToken(token: String?) {
         TokenHolder.token = token

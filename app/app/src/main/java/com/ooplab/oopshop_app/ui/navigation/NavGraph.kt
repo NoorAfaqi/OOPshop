@@ -7,7 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.ooplab.oopshop_app.ui.screens.AdminPanelScreen
+import com.ooplab.oopshop_app.ui.screens.AdminHostScreen
 import com.ooplab.oopshop_app.ui.screens.BillingScreen
 import com.ooplab.oopshop_app.ui.screens.ChangePasswordScreen
 import com.ooplab.oopshop_app.ui.screens.CurrentOrdersScreen
@@ -36,9 +36,39 @@ object Routes {
     const val PROFILE_SETTINGS = "profile_settings"
     const val CHANGE_PASSWORD = "change_password"
     const val ADMIN_PANEL = "admin_panel"
+    const val ADMIN_PRODUCTS = "admin_products"
+    const val ADMIN_PRODUCT_DETAIL = "admin_product/{productId}"
+    const val ADMIN_INVENTORY = "admin_inventory"
+    const val ADMIN_USERS = "admin_users"
+    const val ADMIN_USER_DETAIL = "admin_user/{userId}"
+    const val ADMIN_INVOICES = "admin_invoices"
+    const val ADMIN_INVOICE_DETAIL = "admin_invoice/{invoiceId}"
+    const val ADMIN_REPORTS = "admin_reports"
+    const val ADMIN_PAYMENTS = "admin_payments"
 
     fun productDetail(productId: Int) = "product/$productId"
     fun orderDetail(orderId: Int) = "order/$orderId"
+    fun adminProductDetail(productId: Int) = "admin_product/$productId"
+    fun adminUserDetail(userId: Int) = "admin_user/$userId"
+    fun adminInvoiceDetail(invoiceId: Int) = "admin_invoice/$invoiceId"
+}
+
+/** Inner routes for admin drawer (nested NavHost inside AdminHostScreen). */
+object AdminRoutes {
+    const val DASHBOARD = "admin_dashboard"
+    const val PRODUCTS = "admin_products"
+    const val PRODUCT_DETAIL = "admin_product/{productId}"
+    const val INVENTORY = "admin_inventory"
+    const val USERS = "admin_users"
+    const val USER_DETAIL = "admin_user/{userId}"
+    const val INVOICES = "admin_invoices"
+    const val INVOICE_DETAIL = "admin_invoice/{invoiceId}"
+    const val REPORTS = "admin_reports"
+    const val PAYMENTS = "admin_payments"
+
+    fun productDetail(productId: Int) = "admin_product/$productId"
+    fun userDetail(userId: Int) = "admin_user/$userId"
+    fun invoiceDetail(invoiceId: Int) = "admin_invoice/$invoiceId"
 }
 
 @Composable
@@ -146,9 +176,10 @@ fun OOPShopNavGraph(
             )
         }
         composable(Routes.ADMIN_PANEL) {
-            AdminPanelScreen(
+            AdminHostScreen(
                 adminViewModel = adminViewModel,
-                onBack = { navController.popBackStack() }
+                productsViewModel = productsViewModel,
+                onBackToMain = { navController.popBackStack() }
             )
         }
     }

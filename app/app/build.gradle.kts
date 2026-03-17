@@ -18,7 +18,7 @@ android {
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Production: "https://oopshop.onrender.com/"
-        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3001/\"")
+        buildConfigField("String", "API_BASE_URL", "\"https://oopshop.onrender.com/\"")
     }
 
     buildTypes {
@@ -68,6 +68,7 @@ dependencies {
     implementation(libs.okhttp.logging.interceptor)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.coil.compose)
+    implementation(libs.barcode.scanning)
 
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
