@@ -14,7 +14,7 @@ const { asyncHandler } = require("../middleware/errorHandler");
  *         name: q
  *         schema:
  *           type: string
- *         description: Search query (name, brand, or category)
+ *         description: Search query (name, brand, category, or barcode)
  *       - in: query
  *         name: category
  *         schema:

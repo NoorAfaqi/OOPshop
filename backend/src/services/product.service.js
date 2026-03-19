@@ -59,8 +59,15 @@ class ProductService {
       const params = [];
       
       if (q) {
-        conditions.push("(name LIKE ? OR brand LIKE ? OR category LIKE ?)");
-        params.push(`%${q}%`, `%${q}%`, `%${q}%`);
+        const trimmedQuery = q.toString().trim();
+        conditions.push("(name LIKE ? OR brand LIKE ? OR category LIKE ? OR open_food_facts_barcode = ? OR open_food_facts_barcode LIKE ?)");
+        params.push(
+          `%${trimmedQuery}%`,
+          `%${trimmedQuery}%`,
+          `%${trimmedQuery}%`,
+          trimmedQuery,
+          `%${trimmedQuery}%`
+        );
       }
       if (category) {
         conditions.push("category = ?");

@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -48,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import com.ooplab.oopshop_app.data.dto.ProductDto
 import com.ooplab.oopshop_app.data.repository.Resource
 import com.ooplab.oopshop_app.ui.components.ErrorView
+import com.ooplab.oopshop_app.ui.components.BarcodeScannerDialog
 import com.ooplab.oopshop_app.ui.components.LoadingView
 import com.ooplab.oopshop_app.ui.components.ProductCard
 import com.ooplab.oopshop_app.viewmodel.ProductsViewModel
@@ -71,6 +73,7 @@ fun ShopScreen(
     var sortOrder by remember { mutableStateOf("desc") }
     var allCategories by remember { mutableStateOf<List<String>>(emptyList()) }
     var sortExpanded by remember { mutableStateOf(false) }
+    var showBarcodeScanner by remember { mutableStateOf(false) }
 
     LaunchedEffect(searchQuery) {
         delay(400)
@@ -127,6 +130,7 @@ fun ShopScreen(
                 searchQuery = searchQuery,
                 onSearchChange = { searchQuery = it },
                 onSearchClear = { searchQuery = "" },
+                onScanClick = { showBarcodeScanner = true },
                 sortBy = sortBy,
                 sortOrder = sortOrder,
                 sortExpanded = sortExpanded,
@@ -184,6 +188,16 @@ fun ShopScreen(
             }
         }
     }
+
+    if (showBarcodeScanner) {
+        BarcodeScannerDialog(
+            title = "Scan product barcode",
+            onDismiss = { showBarcodeScanner = false },
+            onBarcodeScanned = { scannedCode ->
+                searchQuery = scannedCode
+            }
+        )
+    }
 }
 
 @Composable
@@ -191,6 +205,7 @@ private fun CompactFilterBar(
     searchQuery: String,
     onSearchChange: (String) -> Unit,
     onSearchClear: () -> Unit,
+    onScanClick: () -> Unit,
     sortBy: String,
     sortOrder: String,
     sortExpanded: Boolean,
@@ -229,9 +244,20 @@ private fun CompactFilterBar(
                 )
             },
             trailingIcon = {
-                if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = onSearchClear, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(18.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onScanClick, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            Icons.Default.QrCodeScanner,
+                            contentDescription = "Scan barcode",
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = onSearchClear, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(18.dp))
+                        }
                     }
                 }
             },
