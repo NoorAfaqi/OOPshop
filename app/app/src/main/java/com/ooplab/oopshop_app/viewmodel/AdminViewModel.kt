@@ -5,6 +5,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.ooplab.oopshop_app.data.api.PaymentListItemDto
+import com.ooplab.oopshop_app.data.api.BarcodeRequest
+import com.ooplab.oopshop_app.data.api.CreateProductRequest
+import com.ooplab.oopshop_app.data.api.FromBarcodeResponse
+import com.ooplab.oopshop_app.data.api.StockAdjustmentRequest
 import com.ooplab.oopshop_app.data.dto.InvoiceDetailDto
 import com.ooplab.oopshop_app.data.dto.InvoiceListItemDto
 import com.ooplab.oopshop_app.data.dto.ProductDto
@@ -40,6 +44,15 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _lowStockProducts = MutableLiveData<Resource<List<ProductDto>>>()
     val lowStockProducts: LiveData<Resource<List<ProductDto>>> = _lowStockProducts
+
+    private val _barcodeSuggestion = MutableLiveData<Resource<FromBarcodeResponse>>()
+    val barcodeSuggestion: LiveData<Resource<FromBarcodeResponse>> = _barcodeSuggestion
+
+    private val _createProductResult = MutableLiveData<Resource<ProductDto>?>()
+    val createProductResult: LiveData<Resource<ProductDto>?> = _createProductResult
+
+    private val _adjustStockResult = MutableLiveData<Resource<ProductDto>?>()
+    val adjustStockResult: LiveData<Resource<ProductDto>?> = _adjustStockResult
 
     private val _payments = MutableLiveData<Resource<List<PaymentListItemDto>>>()
     val payments: LiveData<Resource<List<PaymentListItemDto>>> = _payments
@@ -174,6 +187,130 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
                 _lowStockProducts.value = Resource.Error(e.message ?: "Failed to load low stock", e)
             }
         }
+    }
+
+    fun fetchProductFromBarcode(barcode: String) {
+        val cleanBarcode = barcode.trim()
+        if (cleanBarcode.isEmpty()) {
+            _barcodeSuggestion.value = Resource.Error("Barcode is required")
+            return
+        }
+        _barcodeSuggestion.value = Resource.Loading
+        scope.launch {
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    RetrofitClient.productApi.fetchProductFromBarcode(BarcodeRequest(cleanBarcode))
+                }
+                when {
+                    response.isSuccessful -> {
+                        val body = response.body()
+                        when {
+                            body != null && body.isSuccess() && body.data != null ->
+                                _barcodeSuggestion.value = Resource.Success(body.data)
+                            body != null -> _barcodeSuggestion.value = Resource.Error(body.message ?: "Request failed")
+                            else -> _barcodeSuggestion.value = Resource.Error("Empty response")
+                        }
+                    }
+                    else -> _barcodeSuggestion.value = Resource.Error("${response.code()}: ${response.message()}")
+                }
+            } catch (e: Exception) {
+                _barcodeSuggestion.value = Resource.Error(e.message ?: "Failed to fetch from barcode", e)
+            }
+        }
+    }
+
+    fun createProduct(
+        name: String,
+        price: Double,
+        brand: String? = null,
+        imageUrl: String? = null,
+        category: String? = null,
+        description: String? = null,
+        stockQuantity: Int = 0,
+        barcode: String? = null
+    ) {
+        _createProductResult.value = Resource.Loading
+        scope.launch {
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    RetrofitClient.productApi.createProduct(
+                        CreateProductRequest(
+                            name = name,
+                            price = price,
+                            brand = brand?.takeIf { it.isNotBlank() },
+                            image_url = imageUrl?.takeIf { it.isNotBlank() },
+                            category = category?.takeIf { it.isNotBlank() },
+                            description = description?.takeIf { it.isNotBlank() },
+                            stock_quantity = stockQuantity,
+                            open_food_facts_barcode = barcode?.takeIf { it.isNotBlank() }
+                        )
+                    )
+                }
+                when {
+                    response.isSuccessful -> {
+                        val body = response.body()
+                        when {
+                            body != null && body.isSuccess() && body.data != null -> {
+                                _createProductResult.value = Resource.Success(body.data)
+                                loadProducts(forceRefresh = true)
+                            }
+                            body != null -> _createProductResult.value = Resource.Error(body.message ?: "Request failed")
+                            else -> _createProductResult.value = Resource.Error("Empty response")
+                        }
+                    }
+                    else -> _createProductResult.value = Resource.Error("${response.code()}: ${response.message()}")
+                }
+            } catch (e: Exception) {
+                _createProductResult.value = Resource.Error(e.message ?: "Failed to create product", e)
+            }
+        }
+    }
+
+    fun clearCreateProductResult() {
+        _createProductResult.value = null
+    }
+
+    fun addStock(productId: Int, quantityToAdd: Int, reason: String? = null) {
+        if (quantityToAdd <= 0) {
+            _adjustStockResult.value = Resource.Error("Quantity must be greater than 0")
+            return
+        }
+        _adjustStockResult.value = Resource.Loading
+        scope.launch {
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    RetrofitClient.productApi.adjustStock(
+                        productId,
+                        StockAdjustmentRequest(
+                            quantity_change = quantityToAdd,
+                            change_type = "adjustment",
+                            reason = reason?.takeIf { it.isNotBlank() }
+                        )
+                    )
+                }
+                when {
+                    response.isSuccessful -> {
+                        val body = response.body()
+                        when {
+                            body != null && body.isSuccess() && body.data != null -> {
+                                _adjustStockResult.value = Resource.Success(body.data)
+                                loadLowStockProducts(forceRefresh = true)
+                                loadProducts(forceRefresh = true)
+                            }
+                            body != null -> _adjustStockResult.value = Resource.Error(body.message ?: "Request failed")
+                            else -> _adjustStockResult.value = Resource.Error("Empty response")
+                        }
+                    }
+                    else -> _adjustStockResult.value = Resource.Error("${response.code()}: ${response.message()}")
+                }
+            } catch (e: Exception) {
+                _adjustStockResult.value = Resource.Error(e.message ?: "Failed to add stock", e)
+            }
+        }
+    }
+
+    fun clearAdjustStockResult() {
+        _adjustStockResult.value = null
     }
 
     fun loadPayments(forceRefresh: Boolean = false) {
