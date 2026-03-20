@@ -20,6 +20,9 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="OOPshop product recommendations", version="1.0.0")
 
+@app.get("/")
+def root():
+    return {"message": "API is working"}
 
 @app.get("/health")
 def health() -> dict[str, str]:
