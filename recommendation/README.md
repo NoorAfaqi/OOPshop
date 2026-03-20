@@ -56,4 +56,6 @@ This folder matches [Vercel’s FastAPI layout](https://vercel.com/docs/framewor
 3. **Python version:** `.python-version` pins **3.12** for Linux builds (aligns with stable PyTorch wheels). Local Windows may still use another version.
 4. Deploy: `vercel` / Git push, or `vercel dev` for a local Vercel-shaped run.
 
-**Limits:** Vercel Functions have a **~500 MB** deployment size budget, **timeout** caps by plan (`vercel.json` requests **60 s** and **3008 MB** for `main.py`; Hobby plans may cap lower until you upgrade). **PyTorch + sentence-transformers** are large and slow on cold starts; the first request after idle may download/cache the model from Hugging Face—set `HF_TOKEN` if you hit rate limits. If the bundle or runtime is too heavy, run this service on a VM, Railway, Fly.io, or similar instead.
+**Limits (incl. Hobby):** Python functions allow up to **~500 MB** uncompressed bundle. **`memory` is not set in `vercel.json`**—on Hobby, Vercel fixes functions at **2 GB / 1 vCPU** and [rejects or warns if you try to override memory in config](https://vercel.com/docs/functions/configuring-functions/memory). **`maxDuration`** in `vercel.json` is **60 s** (under the current **300 s** Hobby ceiling; adjust if your plan or Fluid Compute defaults differ).
+
+**PyTorch + sentence-transformers** are heavy: builds can hit **size or install timeouts**; cold starts may download the Hugging Face model—use **`HF_TOKEN`** if rate-limited. If deploys still fail on Hobby, use a container/VM host (Railway, Fly.io, Render, etc.) instead.
