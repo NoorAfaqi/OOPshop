@@ -56,6 +56,6 @@ This folder matches [Vercel’s FastAPI layout](https://vercel.com/docs/framewor
 3. **Python version:** `.python-version` pins **3.12** for Linux builds (aligns with stable PyTorch wheels). Local Windows may still use another version.
 4. Deploy: `vercel` / Git push, or `vercel dev` for a local Vercel-shaped run.
 
-**Limits (incl. Hobby):** Python functions allow up to **~500 MB** uncompressed bundle. **`memory` is not set in `vercel.json`**—on Hobby, Vercel fixes functions at **2 GB / 1 vCPU** and [rejects or warns if you try to override memory in config](https://vercel.com/docs/functions/configuring-functions/memory). **`maxDuration`** in `vercel.json` is **60 s** (under the current **300 s** Hobby ceiling; adjust if your plan or Fluid Compute defaults differ).
+**Limits (incl. Hobby):** Python functions allow up to **~500 MB** uncompressed bundle. On Hobby, Vercel fixes functions at **2 GB / 1 vCPU** and [does not allow memory override in `vercel.json`](https://vercel.com/docs/functions/configuring-functions/memory). This project now uses FastAPI zero-config discovery (no `functions` block) to stay compatible with Hobby monorepo builds.
 
 **PyTorch + sentence-transformers** are heavy: builds can hit **size or install timeouts**; cold starts may download the Hugging Face model—use **`HF_TOKEN`** if rate-limited. If deploys still fail on Hobby, use a container/VM host (Railway, Fly.io, Render, etc.) instead.
