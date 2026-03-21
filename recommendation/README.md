@@ -62,6 +62,11 @@ This folder matches [Vercel’s FastAPI layout](https://vercel.com/docs/framewor
 
 ## Deploy on Render (and IPv6 / Supabase)
 
+**If the build fails with “packages do not match the hashes from the requirements file”:** pip is running in **hash-check mode**. On Render → **Environment**, remove **`PIP_REQUIRE_HASHES`** (or set it to `0`). Your **Build Command** must **not** include `--require-hashes`. Your `requirements.txt` must **not** contain per-line `--hash=sha256:…` entries unless they were generated for **Linux** wheels (Windows/macOS hashes will not match).
+
+**Smaller installs on Render:** `requirements.txt` uses PyTorch’s **CPU** index so the deploy does not pull CUDA/NVIDIA wheels (~several GB).
+
+
 If logs show **`Network is unreachable`** to `db.*.supabase.co` with an **IPv6** address in parentheses, the platform usually has **no IPv6 egress**. Supabase’s **direct** URL targets IPv6.
 
 **Fix:** In Supabase → **Project Settings** → **Database**, switch to **Connection pooling** and copy the URI (host like `aws-0-*.pooler.supabase.com`, port **6543**). Set that as `DATABASE_URL` on Render (keep `?sslmode=require`). If you hit pooler quirks, try **Session** vs **Transaction** mode in the dashboard. Alternatively, enable Supabase’s **IPv4 add-on** and keep the direct host.
