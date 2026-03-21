@@ -7,7 +7,7 @@ from app.mysql_repo import (
     mysql_connect,
     text_for_embedding,
 )
-from app.vector_store import upsert_many
+from app.vector_store import delete_embeddings_not_in, upsert_many
 
 
 def sync_all_embeddings(settings: Settings, batch_size: int = 32) -> dict[str, int]:
@@ -40,8 +40,12 @@ def sync_all_embeddings(settings: Settings, batch_size: int = 32) -> dict[str, i
         upsert_many(settings, batch)
         total_embedded += len(batch)
 
+    keep_ids = {pid for pid, _, _ in prepared}
+    pruned = delete_embeddings_not_in(settings, keep_ids)
+
     return {
         "products_in_mysql": len(rows),
         "embedded": total_embedded,
         "skipped_no_text": len(rows) - len(prepared),
+        "pruned": pruned,
     }

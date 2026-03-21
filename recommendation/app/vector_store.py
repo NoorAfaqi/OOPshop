@@ -126,6 +126,30 @@ def get_embedding(settings: Settings, product_id: int) -> np.ndarray | None:
             return np.asarray(row[0], dtype=np.float32)
 
 
+def delete_embeddings_not_in(settings: Settings, keep_product_ids: set[int]) -> int:
+    """
+    Remove rows whose product_id is not in keep_product_ids.
+    Used after sync so deleted MySQL products and products with no embeddable text
+    do not stay in the vector index.
+    If keep_product_ids is empty, clears the table.
+    """
+    with pg_conn(settings) as conn:
+        with conn.cursor() as cur:
+            if not keep_product_ids:
+                cur.execute("DELETE FROM public.product_embeddings")
+                return cur.rowcount or 0
+            ids = sorted(keep_product_ids)
+            placeholders = ",".join(["%s"] * len(ids))
+            cur.execute(
+                f"""
+                DELETE FROM public.product_embeddings
+                WHERE product_id NOT IN ({placeholders})
+                """,
+                ids,
+            )
+            return cur.rowcount or 0
+
+
 def match_similar(
     settings: Settings,
     query_embedding: np.ndarray,

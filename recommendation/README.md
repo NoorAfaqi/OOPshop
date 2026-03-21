@@ -36,7 +36,7 @@ python main.py
 ```
 
 - `GET /health` — liveness  
-- `POST /embeddings/sync` — pull all products from MySQL, embed rows that have some text (name / category / description), upsert into `product_embeddings`  
+- `POST /embeddings/sync` — pull all products from MySQL, embed rows that have some text (name / category / description), upsert into `product_embeddings`, then **delete** Supabase rows for products no longer in that set (removed from MySQL or no embeddable text). Response includes **`pruned`** (row count deleted).  
 - `GET /recommendations/{product_id}?k=10` — cosine‑similar products (enriched from MySQL). If the source product has no stored vector yet, it is embedded on the fly and saved.
 
 ## Embedding text

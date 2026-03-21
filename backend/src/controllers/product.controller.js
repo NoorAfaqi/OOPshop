@@ -1,4 +1,5 @@
 const productService = require("../services/product.service");
+const recommendationService = require("../services/recommendation.service");
 const { successResponse } = require("../utils/response");
 const { asyncHandler } = require("../middleware/errorHandler");
 
@@ -176,6 +177,7 @@ const getProductById = asyncHandler(async (req, res) => {
  */
 const createProduct = asyncHandler(async (req, res) => {
   const product = await productService.createProduct(req.body);
+  recommendationService.triggerEmbeddingsSyncBackground();
   successResponse(res, product, "Product created successfully", 201);
 });
 
@@ -243,6 +245,7 @@ const updateProduct = asyncHandler(async (req, res) => {
 const deleteProduct = asyncHandler(async (req, res) => {
   const productId = parseInt(req.params.id, 10);
   await productService.deleteProduct(productId);
+  recommendationService.triggerEmbeddingsSyncBackground();
   successResponse(res, null, "Product deleted successfully");
 });
 
@@ -426,6 +429,34 @@ const getOutOfStockProducts = asyncHandler(async (req, res) => {
   successResponse(res, products, "Out of stock products fetched successfully");
 });
 
+/**
+ * @swagger
+ * /products/{id}/recommendations:
+ *   get:
+ *     tags: [Products]
+ *     summary: Get similar products (recommendations)
+ *     description: Proxies to the recommendation service (k=5) and returns full product rows from the catalog for each match.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Source product ID
+ *     responses:
+ *       200:
+ *         description: Recommendations with full product details
+ *       404:
+ *         description: Product not found at recommendation service
+ *       502:
+ *         description: Recommendation service unreachable
+ */
+const getRecommendedProducts = asyncHandler(async (req, res) => {
+  const productId = parseInt(req.params.id, 10);
+  const data = await recommendationService.getRecommendedProductsWithDetails(productId);
+  successResponse(res, data, "Recommendations fetched successfully");
+});
+
 module.exports = {
   getAllProducts,
   getProductById,
@@ -438,5 +469,6 @@ module.exports = {
   getStockHistory,
   getLowStockProducts,
   getOutOfStockProducts,
+  getRecommendedProducts,
 };
 

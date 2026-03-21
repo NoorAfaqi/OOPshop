@@ -33,6 +33,10 @@ class SyncResponse(BaseModel):
     products_in_mysql: int
     embedded: int
     skipped_no_text: int
+    pruned: int = Field(
+        default=0,
+        description="Supabase rows removed (deleted products or no longer embeddable text)",
+    )
 
 
 @app.post("/embeddings/sync", response_model=SyncResponse)
