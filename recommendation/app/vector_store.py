@@ -24,11 +24,28 @@ _TABLE_MISSING_HINT = (
     "Enabling the vector extension alone does not create this table."
 )
 
+_IPV6_EGRESS_HINT = (
+    "Postgres is unreachable from this host (often IPv6). Supabase 'Direct connection' "
+    "(db.*.supabase.co:5432) commonly resolves to IPv6; Render and many clouds have no IPv6 egress. "
+    "Fix: in Supabase → Project Settings → Database, copy the 'Connection pooling' URI "
+    "(host like aws-0-*.pooler.supabase.com, port 6543). Use Session mode if Transaction mode "
+    "misbehaves with your client. Append ?sslmode=require. Optionally enable Supabase IPv4 add-on "
+    "for direct connections."
+)
+
 
 def _translate_pg_exception(exc: BaseException) -> RuntimeError | None:
     if isinstance(exc, psycopg2.errors.UndefinedTable):
         if "product_embeddings" in str(exc):
             return RuntimeError(_TABLE_MISSING_HINT)
+    if isinstance(exc, psycopg2.OperationalError):
+        msg = str(exc).lower()
+        if "network is unreachable" in msg or "no route to host" in msg:
+            return RuntimeError(_IPV6_EGRESS_HINT)
+        if "could not translate host name" in msg:
+            return RuntimeError(
+                "Postgres DNS lookup failed. Check DATABASE_URL and outbound DNS from this host."
+            )
     return None
 
 
@@ -44,19 +61,22 @@ def _register_vector(conn: psycopg2.extensions.connection) -> None:
 
 @contextmanager
 def pg_conn(settings: Settings) -> Generator[psycopg2.extensions.connection, None, None]:
-    conn = psycopg2.connect(settings.database_url)
+    conn = None
     try:
+        conn = psycopg2.connect(settings.database_url)
         _register_vector(conn)
         yield conn
         conn.commit()
     except Exception as e:
-        conn.rollback()
+        if conn is not None:
+            conn.rollback()
         replacement = _translate_pg_exception(e)
         if replacement is not None:
             raise replacement from e
         raise
     finally:
-        conn.close()
+        if conn is not None:
+            conn.close()
 
 
 def upsert_many(

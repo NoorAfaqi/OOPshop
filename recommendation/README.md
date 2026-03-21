@@ -59,3 +59,11 @@ This folder matches [Vercel’s FastAPI layout](https://vercel.com/docs/framewor
 **Limits (incl. Hobby):** Python functions allow up to **~500 MB** uncompressed bundle. On Hobby, Vercel fixes functions at **2 GB / 1 vCPU** and [does not allow memory override in `vercel.json`](https://vercel.com/docs/functions/configuring-functions/memory). This project now uses FastAPI zero-config discovery (no `functions` block) to stay compatible with Hobby monorepo builds.
 
 **PyTorch + sentence-transformers** are heavy: builds can hit **size or install timeouts**; cold starts may download the Hugging Face model—use **`HF_TOKEN`** if rate-limited. If deploys still fail on Hobby, use a container/VM host (Railway, Fly.io, Render, etc.) instead.
+
+## Deploy on Render (and IPv6 / Supabase)
+
+If logs show **`Network is unreachable`** to `db.*.supabase.co` with an **IPv6** address in parentheses, the platform usually has **no IPv6 egress**. Supabase’s **direct** URL targets IPv6.
+
+**Fix:** In Supabase → **Project Settings** → **Database**, switch to **Connection pooling** and copy the URI (host like `aws-0-*.pooler.supabase.com`, port **6543**). Set that as `DATABASE_URL` on Render (keep `?sslmode=require`). If you hit pooler quirks, try **Session** vs **Transaction** mode in the dashboard. Alternatively, enable Supabase’s **IPv4 add-on** and keep the direct host.
+
+**Production:** run without reload, e.g. `uvicorn app.main:app --host 0.0.0.0 --port $PORT` (Render sets `PORT`; use it instead of hard-coding 8088 if you wire the start command that way).
