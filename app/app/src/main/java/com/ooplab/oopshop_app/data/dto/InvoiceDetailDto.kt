@@ -15,6 +15,10 @@ data class InvoiceDetailDto(
     @SerializedName("last_name") val lastName: String? = null,
     val email: String? = null,
     val phone: String? = null,
+    @SerializedName("billing_street") val billingStreet: String? = null,
+    @SerializedName("billing_zip") val billingZip: String? = null,
+    @SerializedName("billing_city") val billingCity: String? = null,
+    @SerializedName("billing_country") val billingCountry: String? = null,
     val items: List<InvoiceItemDto>? = null
 )
 

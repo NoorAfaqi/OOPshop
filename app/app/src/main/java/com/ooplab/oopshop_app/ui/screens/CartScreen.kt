@@ -53,6 +53,7 @@ import com.ooplab.oopshop_app.ui.components.PrimaryButton
 import com.ooplab.oopshop_app.ui.components.showToast
 import com.ooplab.oopshop_app.viewmodel.CartViewModel
 
+@SuppressLint("DefaultLocale")
 @Composable
 fun CartScreen(
     cartViewModel: CartViewModel,

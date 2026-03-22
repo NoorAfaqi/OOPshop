@@ -11,6 +11,7 @@ import com.ooplab.oopshop_app.data.api.FromBarcodeResponse
 import com.ooplab.oopshop_app.data.api.StockAdjustmentRequest
 import com.ooplab.oopshop_app.data.dto.InvoiceDetailDto
 import com.ooplab.oopshop_app.data.dto.InvoiceListItemDto
+import com.ooplab.oopshop_app.data.dto.UpdateInvoiceStatusRequest
 import com.ooplab.oopshop_app.data.dto.ProductDto
 import com.ooplab.oopshop_app.data.dto.ReportDto
 import com.ooplab.oopshop_app.data.dto.UserDto
@@ -60,6 +61,12 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _invoiceDetail = MutableLiveData<Resource<InvoiceDetailDto>>()
     val invoiceDetail: LiveData<Resource<InvoiceDetailDto>> = _invoiceDetail
+
+    private val _markingInvoiceShipped = MutableLiveData(false)
+    val markingInvoiceShipped: LiveData<Boolean> = _markingInvoiceShipped
+
+    private val _invoiceShippedError = MutableLiveData<String?>(null)
+    val invoiceShippedError: LiveData<String?> = _invoiceShippedError
 
     private val _userDetail = MutableLiveData<Resource<UserDto>>()
     val userDetail: LiveData<Resource<UserDto>> = _userDetail
@@ -371,6 +378,47 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
                 }
             } catch (e: Exception) {
                 _invoiceDetail.value = Resource.Error(e.message ?: "Failed to load invoice", e)
+            }
+        }
+    }
+
+    fun clearInvoiceShippedError() {
+        _invoiceShippedError.value = null
+    }
+
+    /**
+     * PUT /invoices/:id with status [shipped]. Refreshes [invoiceDetail] on success and invalidates invoice list cache.
+     */
+    fun markInvoiceAsShipped(invoiceId: Int) {
+        scope.launch {
+            _markingInvoiceShipped.value = true
+            _invoiceShippedError.value = null
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    RetrofitClient.invoicesApi.updateInvoiceStatus(
+                        invoiceId,
+                        UpdateInvoiceStatusRequest("shipped")
+                    )
+                }
+                when {
+                    response.isSuccessful -> {
+                        val body = response.body()
+                        when {
+                            body != null && body.isSuccess() && body.data != null -> {
+                                _invoiceDetail.value = Resource.Success(body.data)
+                                loadAllInvoices(forceRefresh = true)
+                            }
+                            body != null -> _invoiceShippedError.value = body.message ?: "Request failed"
+                            else -> _invoiceShippedError.value = "Empty response"
+                        }
+                    }
+                    else -> _invoiceShippedError.value =
+                        "${response.code()}: ${response.message()}"
+                }
+            } catch (e: Exception) {
+                _invoiceShippedError.value = e.message ?: "Failed to mark as shipped"
+            } finally {
+                _markingInvoiceShipped.value = false
             }
         }
     }

@@ -1,352 +1,192 @@
-# 🛒 OOPshop - Modern E-Commerce Platform
+# OOPshop
 
-A **scalable, secure, and production-ready** e-commerce platform built with modern web technologies and enterprise-grade architecture.
+Full-stack e-commerce platform: **Express API**, **Next.js storefront**, **Kotlin / Jetpack Compose Android app**, optional **Python recommendation service**, and **MySQL**. Built for coursework-style OOP architecture with a clear split between routes, controllers, services, and data access.
 
-[![Node.js](https://img.shields.io/badge/Node.js-18.x-green.svg)](https://nodejs.org/)
-[![Next.js](https://img.shields.io/badge/Next.js-16.x-black.svg)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
-[![License: ISC](https://img.shields.io/badge/License-ISC-yellow.svg)](https://opensource.org/licenses/ISC)
-
-## ✨ Features
-
-### 🎯 Core Functionality
-- 🛍️ Product browsing and management
-- 🛒 Shopping cart with persistence
-- 💳 Checkout and order processing
-- 📦 Invoice management
-- 💰 Payment processing
-- 📊 Dashboard and reporting
-- 📧 **Email Notifications** - Automated emails for order placed and shipped
-- 🔐 JWT authentication and authorization
-- 🔒 Role-based access control
-- 🔍 **OpenFoodFacts API Integration** - Import products by barcode with nutritional info
-
-### 🏗️ Architecture
-- **Backend**: Node.js + Express with layered architecture
-- **Frontend**: Next.js 16 + React 19 + TypeScript
-- **Database**: MySQL with proper relationships
-- **Security**: Helmet, Rate Limiting, Input Validation
-- **Documentation**: Swagger/OpenAPI interactive docs
-- **Logging**: Winston structured logging
-
-### 🔒 Security Features
-- ✅ JWT token-based authentication
-- ✅ Bcrypt password hashing
-- ✅ Rate limiting (DDoS protection)
-- ✅ Input validation and sanitization
-- ✅ SQL injection prevention
-- ✅ XSS protection
-- ✅ CORS configuration
-- ✅ Secure HTTP headers (Helmet)
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Node.js >= 18.x
-- MySQL >= 8.0
-- npm or yarn
-
-### Installation
-
-1. **Clone the repository**
-```bash
-git clone <repository-url>
-cd OOPshop
-```
-
-2. **Backend Setup**
-```bash
-cd backend
-npm install
-cp .env.example .env
-# Edit .env with your configuration
-npm run migrate
-npm run dev
-```
-
-3. **Frontend Setup**
-```bash
-cd frontend
-npm install
-# Create .env.local with NEXT_PUBLIC_API_URL=http://localhost:3001
-npm run dev
-```
-
-4. **Access the Application**
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:3001
-- API Documentation: http://localhost:3001/api-docs
-
-For detailed setup instructions, see [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md)
-
-## 📚 Documentation
-
-All documentation is organized in the `docs/` directory. See [docs/README.md](docs/README.md) for a complete index.
-
-### Quick Links
-- **[docs/README.md](docs/README.md)** - Documentation index
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Main architecture documentation
-- **[docs/ARCHITECTURE_PATTERNS.md](docs/ARCHITECTURE_PATTERNS.md)** - Architecture patterns and strengths
-- **[docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md)** - Setup and installation guide
-- **[docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md)** - Testing documentation
-- **[docs/DOCKER_SETUP.md](docs/DOCKER_SETUP.md)** - Docker setup guide
-- **[docs/RENDER_DEPLOYMENT.md](docs/RENDER_DEPLOYMENT.md)** - Deployment guide
-- **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Project structure overview
-
-## 🏗️ Project Structure
-
-```
-OOPshop/
-├── backend/                 # Node.js Express API
-│   ├── src/
-│   │   ├── config/         # Configuration files
-│   │   ├── controllers/    # Request handlers
-│   │   ├── services/       # Business logic
-│   │   ├── middleware/     # Custom middleware
-│   │   ├── validators/     # Input validation
-│   │   ├── routes/         # API routes
-│   │   ├── utils/          # Utility functions
-│   │   ├── app.js          # Express app
-│   │   ├── server.js       # Server initialization
-│   │   └── index.js        # Entry point
-│   ├── logs/               # Application logs
-│   └── package.json
-│
-├── frontend/               # Next.js React App
-│   ├── app/               # Next.js pages
-│   ├── components/        # React components
-│   ├── lib/
-│   │   ├── config/       # Configuration
-│   │   ├── services/     # API services
-│   │   ├── hooks/        # Custom React hooks
-│   │   ├── types/        # TypeScript types
-│   │   └── utils/        # Utility functions
-│   └── package.json
-│
-└── Documentation files
-```
-
-## 🔌 API Endpoints
-
-### Public Endpoints
-```
-GET    /health                - Health check
-GET    /products              - List products
-GET    /products/:id          - Get product details
-POST   /checkout              - Process checkout
-POST   /auth/login            - Manager login
-```
-
-### Protected Endpoints (Require JWT)
-```
-POST   /products              - Create product
-PUT    /products/:id          - Update product
-DELETE /products/:id          - Delete product
-GET    /invoices              - List invoices
-GET    /invoices/:id          - Get invoice details
-GET    /users                 - List users
-GET    /reports               - Get reports
-GET    /payments              - List payments
-```
-
-📖 **Full API Documentation**: http://localhost:3001/api-docs
-
-## 🗄️ Database Schema
-
-```
-managers → (authentication)
-customers → invoices → invoice_items → products
-            ↓
-         payments
-```
-
-Complete schema with relationships is detailed in [ARCHITECTURE.md](ARCHITECTURE.md)
-
-## 🧪 Testing
-
-```bash
-# Backend tests
-cd backend
-npm test
-
-# Frontend tests
-cd frontend
-npm test
-```
-
-## 📈 Architecture Patterns
-
-### Backend
-- **Layered Architecture**: Routes → Controllers → Services → Database
-- **Dependency Injection**: Services injected into controllers
-- **Error Handling**: Centralized error middleware
-- **Logging**: Structured logging with Winston
-- **Security**: Multiple layers of security middleware
-
-### Frontend
-- **Service Layer Pattern**: API abstraction
-- **Custom Hooks**: Reusable stateful logic
-- **Type Safety**: Full TypeScript integration
-- **Error Boundaries**: Graceful error handling
-
-## 🔧 Technologies Used
-
-### Backend
-- **Framework**: Express.js
-- **Database**: MySQL with mysql2
-- **Authentication**: JWT (jsonwebtoken) + bcrypt
-- **Security**: Helmet, express-rate-limit, express-validator
-- **Documentation**: Swagger (swagger-jsdoc, swagger-ui-express)
-- **Logging**: Winston
-- **Validation**: express-validator, Joi
-
-### Frontend
-- **Framework**: Next.js 16 (App Router)
-- **Language**: TypeScript
-- **UI Library**: Material-UI (MUI)
-- **Styling**: Emotion (CSS-in-JS)
-- **State Management**: React hooks + localStorage
-
-## 🌟 Key Features
-
-### Scalability
-- Horizontal scaling ready (stateless design)
-- Database connection pooling
-- Efficient resource management
-- Microservices ready
-
-### Security
-- Multi-layer security approach
-- JWT authentication
-- Rate limiting
-- Input validation
-- SQL injection prevention
-
-### Developer Experience
-- Comprehensive documentation
-- Interactive API docs (Swagger)
-- Type safety (TypeScript)
-- Structured error handling
-- Detailed logging
-
-### Production Ready
-- Process management ready
-- Environment-based configuration
-- Graceful shutdown handling
-- Health check endpoints
-- Monitoring hooks
-
-## 📊 Performance
-
-- Connection pooling for database efficiency
-- Optimized queries with proper indexing
-- Client-side caching with React hooks
-- Lazy loading with Next.js code splitting
-
-## 🛡️ Security Best Practices
-
-1. ✅ Never commit `.env` files
-2. ✅ Use strong JWT secrets
-3. ✅ Keep dependencies updated
-4. ✅ Enable HTTPS in production
-5. ✅ Regular security audits
-6. ✅ Input validation on all endpoints
-7. ✅ Rate limiting enabled
-8. ✅ SQL injection prevention
-
-## 🚀 Deployment
-
-### Backend
-```bash
-cd backend
-npm install
-npm run migrate
-npm start
-```
-
-Use PM2 for process management:
-```bash
-pm2 start src/index.js --name oopshop-api
-```
-
-### Frontend
-```bash
-cd frontend
-npm install
-npm run build
-npm start
-```
-
-Or deploy to Vercel:
-```bash
-vercel
-```
-
-See [SETUP_GUIDE.md](SETUP_GUIDE.md) for detailed deployment instructions.
-
-## 📝 Environment Variables
-
-### Backend (.env)
-```env
-PORT=3001
-NODE_ENV=production
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_password
-DB_NAME=oopshop
-JWT_SECRET=your_secret_key
-CORS_ORIGIN=https://yourdomain.com
-```
-
-### Frontend (.env.local)
-```env
-NEXT_PUBLIC_API_URL=http://localhost:3001
-```
-
-## 🤝 Contributing
-
-1. Follow the existing code structure
-2. Add tests for new features
-3. Update documentation
-4. Ensure all security checks pass
-
-## 📄 License
-
-ISC License - see LICENSE file for details
-
-## 👥 Author
-
-**Muhammad Noor Afaqi**
-
-## 🙏 Acknowledgments
-
-- Express.js community
-- Next.js team
-- Material-UI developers
-- Open source contributors
-
-## 📞 Support
-
-- 📧 Email: support@oopshop.com
-- 📖 Documentation: See docs folder
-- 🐛 Issues: GitHub Issues
-- 💬 Discussions: GitHub Discussions
-
-## 🎯 Roadmap
-
-- [ ] Payment gateway integration (Stripe/PayPal)
-- [ ] Email notifications
-- [ ] Real-time updates (WebSockets)
-- [ ] Advanced search (Elasticsearch)
-- [ ] Admin analytics dashboard
-- [ ] Mobile app (React Native)
-- [ ] Multi-language support
-- [ ] Redis caching layer
-- [ ] Message queue integration
-- [ ] Automated testing suite
+[![Node.js](https://img.shields.io/badge/Node.js-18%20%7C%2020-green.svg)](https://nodejs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
+[![Kotlin](https://img.shields.io/badge/Kotlin-Android-7F52FF.svg)](https://kotlinlang.org/)
+[![License](https://img.shields.io/badge/License-ISC-yellow.svg)](LICENSE)
 
 ---
 
-**Built with ❤️ using modern web technologies for scalability, security, and maintainability.**
+## Repository layout
 
-For detailed information, see [ARCHITECTURE.md](ARCHITECTURE.md) and [SETUP_GUIDE.md](SETUP_GUIDE.md)
+| Path | Description |
+|------|-------------|
+| [`backend/`](backend/) | REST API (Express, MySQL, JWT, Swagger, PayPal hooks, **Nodemailer** order emails) |
+| [`frontend/`](frontend/) | Customer + admin web UI (Next.js 16, React 19, MUI) |
+| [`app/`](app/) | Android client (MVVM, Retrofit, Room, Compose) — see [`app/README.md`](app/README.md) |
+| [`recommendation/`](recommendation/) | Optional FastAPI + embeddings for product similarity — see [`recommendation/README.md`](recommendation/README.md) |
+| [`docs/`](docs/) | Setup, deployment, architecture notes — index: [`docs/README.md`](docs/README.md) |
+
+---
+
+## Features (high level)
+
+- **Catalog**: products, categories, stock, low-stock alerts, barcode / Open Food Facts style fields on products  
+- **Accounts**: unified `users` table (customer, guest checkout, manager, admin) with JWT auth  
+- **Orders**: checkout → invoices + line items; statuses include `pending`, `paid`, `cancelled`, `shipped`  
+- **Payments**: PayPal order creation / capture integrated with invoices  
+- **Email**: HTML emails via **Nodemailer** when an order is **placed** (checkout) and when it is marked **shipped** (admin invoice update) — configure `SMTP_*` in `backend/.env`  
+- **Admin / reports**: invoices, users, reports, payments (API + web + Android admin areas)  
+- **Android app**: shop, cart, checkout, account orders, admin drawer (products, inventory, users, invoices, reports, payments), barcode scanning where implemented  
+- **Recommendations** (optional): separate service using embeddings + pgvector (Supabase)
+
+---
+
+## Prerequisites
+
+- **Node.js** 18.x or 20.x (backend + frontend)  
+- **MySQL** 8.x (or compatible)  
+- **JDK 17+** and **Android Studio** (for `app/`)  
+- **Python 3.10–3.12** (only if you run `recommendation/`)
+
+---
+
+## Quick start
+
+### 1. Backend API
+
+```bash
+cd backend
+npm install
+cp .env.example .env   # edit DB_*, JWT_SECRET, optional SMTP_*, FRONTEND_URL
+npm run migrate
+npm run dev              # default http://localhost:3001
+```
+
+- **Swagger UI**: `http://localhost:3001/api-docs`  
+- **Health**: `http://localhost:3001/health`  
+
+See [`backend/.env.example`](backend/.env.example) for transactional email variables (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_FROM`, etc.).
+
+### 2. Frontend (Next.js)
+
+```bash
+cd frontend
+npm install
+# .env.local — point at your API, e.g.:
+# NEXT_PUBLIC_API_URL=http://localhost:3001
+npm run dev              # default http://localhost:3000
+```
+
+### 3. Android app
+
+```bash
+cd app
+./gradlew :app:assembleDebug
+```
+
+Configure API base URL in `app/app/build.gradle.kts` (`API_BASE_URL` / BuildConfig). Emulator often uses `http://10.0.2.2:3001/`. Details: [`app/README.md`](app/README.md).
+
+### 4. Recommendation service (optional)
+
+```bash
+cd recommendation
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env && # edit MySQL + Supabase DATABASE_URL
+python main.py
+```
+
+---
+
+## Database model (simplified)
+
+Single **`users`** table (roles: `admin`, `manager`, `customer`, `guest`) owns **`invoices`**; **`invoice_items`** reference **`products`**. **`payments`** link to invoices. Stock movements can be recorded when orders ship (see backend invoice service).
+
+More detail: [`ARCHITECTURE.md`](ARCHITECTURE.md) and [`docs/SETUP_GUIDE.md`](docs/SETUP_GUIDE.md).
+
+---
+
+## API overview
+
+Public examples: `GET /health`, `GET /products`, `POST /checkout`, `POST /auth/login`, `POST /auth/register`.  
+Protected routes (JWT): products CRUD (by role), `/invoices`, `/users`, `/reports`, `/payments`, account profile/orders, etc.
+
+**Interactive docs**: run the backend and open `/api-docs`.
+
+---
+
+## Testing
+
+```bash
+# Backend (Mocha)
+cd backend && npm test
+
+# Frontend (Jest)
+cd frontend && npm test
+
+# Android — unit tests + JaCoCo report (from repo `app/` Gradle root)
+cd app && ./gradlew testDebugUnitTest jacocoTestReport
+# Report: app/app/build/reports/jacoco/jacocoTestReport/html/index.html
+```
+
+---
+
+## Continuous integration
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) (on `main` / `master` and PRs) runs:
+
+- Backend tests (Node 18 & 20)  
+- Frontend tests  
+- Android Gradle `check` + `jacocoTestReport` and uploads a **debug APK** artifact  
+- Recommendation (Python) checks  
+
+See the workflow file for required **GitHub Actions secrets** (e.g. database + `JWT_SECRET` for backend jobs).
+
+---
+
+## Deployment notes
+
+- **Backend / API**: Node process (`npm start`), `PORT` from environment (e.g. Render). Run migrations against production DB.  
+- **Frontend**: `npm run build && npm start` or host on Vercel/similar; set `NEXT_PUBLIC_API_URL` to the public API URL.  
+- **Android**: release builds need your own signing config; CI currently publishes **debug** APKs as artifacts.  
+
+Further reading: [`docs/RENDER_DEPLOYMENT.md`](docs/RENDER_DEPLOYMENT.md), [`docs/DOCKER_SETUP.md`](docs/DOCKER_SETUP.md).
+
+---
+
+## Environment variables
+
+| Area | File | Important keys |
+|------|------|----------------|
+| Backend | `backend/.env` | `DB_*`, `JWT_SECRET`, `PORT`, `CORS_ORIGIN`, PayPal-related vars if used, `SMTP_*` / `EMAIL_FROM` / `FRONTEND_URL` for mail |
+| Frontend | `frontend/.env.local` | `NEXT_PUBLIC_API_URL` |
+| Android | `app/app/build.gradle.kts` | `API_BASE_URL` (BuildConfig) |
+| Recommendations | `recommendation/.env` | MySQL + `DATABASE_URL` (Supabase/pgvector) |
+
+Never commit real `.env` files.
+
+---
+
+## Documentation index
+
+- [`docs/README.md`](docs/README.md) — all guides  
+- [`docs/SETUP_GUIDE.md`](docs/SETUP_GUIDE.md) — full setup  
+- [`docs/TESTING_GUIDE.md`](docs/TESTING_GUIDE.md) — testing  
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) — system architecture  
+- [`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md) — layout (may lag behind; prefer table above)
+
+---
+
+## Contributing
+
+Match existing patterns per package (Express layers, Next app router, Kotlin style). Add or update tests when behavior changes. Keep secrets out of git.
+
+---
+
+## License & author
+
+**ISC** — see [`LICENSE`](LICENSE).
+
+## Roadmap ideas
+
+- Deeper E2E / instrumented tests for Android and web  
+- Stronger release signing + Play Store pipeline  
+- Optional Redis / queue for heavy jobs  
+- Richer order tracking (carriers, tracking URLs) in email and API  
+
+---
+
+*For day-to-day API behavior and Android integration details, use Swagger and [`app/README.md`](app/README.md).*
