@@ -60,7 +60,9 @@ afterEvaluate {
         dependsOn(
             "generateDebugLintReportModel",
             "generateDebugAndroidTestLintModel",
+            "generateDebugUnitTestLintModel",
             "lintAnalyzeDebugAndroidTest",
+            "lintAnalyzeDebugUnitTest",
             "lintAnalyzeDebug",
             "extractProguardFiles",
         )
