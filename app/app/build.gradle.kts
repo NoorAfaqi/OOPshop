@@ -1,4 +1,6 @@
 // Apply only kotlin.compose; it includes Kotlin Android in 2.0 and avoids duplicate "kotlin" extension.
+import org.gradle.testing.jacoco.tasks.JacocoReport
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -24,6 +26,7 @@ android {
 
     buildTypes {
         debug {
+            // Enables JaCoCo unit-test coverage tasks (jacocoTestReport) used by CI.
             enableUnitTestCoverage = true
         }
         release {
@@ -47,6 +50,22 @@ android {
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
+}
+
+// Gradle 9+: jacocoTestReport reads outputs under app/build/ that overlap with lint/proguard tasks.
+// Declare ordering so validation does not fail (implicit dependency between tasks).
+afterEvaluate {
+    tasks.named<JacocoReport>("jacocoTestReport").configure {
+        dependsOn(
+            "generateDebugLintReportModel",
+            "generateDebugAndroidTestLintModel",
+            "generateDebugUnitTestLintModel",
+            "lintAnalyzeDebugAndroidTest",
+            "lintAnalyzeDebugUnitTest",
+            "lintAnalyzeDebug",
+            "extractProguardFiles",
+        )
     }
 }
 

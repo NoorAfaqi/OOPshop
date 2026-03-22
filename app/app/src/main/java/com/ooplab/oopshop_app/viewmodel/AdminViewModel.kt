@@ -46,8 +46,8 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
     private val _lowStockProducts = MutableLiveData<Resource<List<ProductDto>>>()
     val lowStockProducts: LiveData<Resource<List<ProductDto>>> = _lowStockProducts
 
-    private val _barcodeSuggestion = MutableLiveData<Resource<FromBarcodeResponse>>()
-    val barcodeSuggestion: LiveData<Resource<FromBarcodeResponse>> = _barcodeSuggestion
+    private val _barcodeSuggestion = MutableLiveData<Resource<FromBarcodeResponse>?>()
+    val barcodeSuggestion: LiveData<Resource<FromBarcodeResponse>?> = _barcodeSuggestion
 
     private val _createProductResult = MutableLiveData<Resource<ProductDto>?>()
     val createProductResult: LiveData<Resource<ProductDto>?> = _createProductResult
