@@ -1,0 +1,89 @@
+# Lightweight checks for the development branch.
+# - Sanity: every push to `development` (quick testing feedback while iterating - understand errors before deployment occurs).
+# - Regression: PRs from `development` → `main` / `master`
+#   (see job body): the authoritative full matrix is `.github/workflows/ci.yml`, which
+#   already runs on those PRs. This workflow avoids duplicating backend tests, frontend
+#   tests, Gradle check/JaCoCo, and recommendation pip installs.
+#
+# This workflow is used to test the development branch before merging it into main or master.
+# It is used to test the development branch before merging it into main or master.
+name: Sanity / Regression
+
+on:
+  push:
+    branches: [development]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  sanity:
+    name: Sanity (development)
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Backend — install & tests (single Node)
+        working-directory: ./backend
+        env:
+          NODE_ENV: test
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: |
+          npm install
+          npm test
+
+      - name: Frontend — install & production build
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npm run build
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Android — unit tests only (no full check / JaCoCo)
+        working-directory: ./app
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:testDebugUnitTest --no-daemon
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Recommendation — byte-compile (no pip install)
+        run: python -m compileall -q recommendation/app
+
+  regression:
+    name: Regression (development → main)
+    if: github.event_name == 'pull_request' && github.head_ref == 'development'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Merge readiness gate (no duplicate of full CI)
+        run: |
+          set -e
+          echo "PR from development → main/master: full validation runs in the CI workflow"
+          echo "(backend matrix, frontend tests, Android check + JaCoCo, recommendation, build gate)."
+          echo "This job only confirms repo layout and branch context to save CI minutes."
+          test -f backend/package.json
+          test -f frontend/package.json
+          test -f app/settings.gradle.kts
+          test -d recommendation/app
+          echo "OK — rely on required CI checks for merge."
