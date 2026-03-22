@@ -23,7 +23,8 @@ import java.util.concurrent.TimeUnit
  */
 object RetrofitClient {
 
-    private const val TIMEOUT_SEC = 30L
+    /** Long enough for chained calls (e.g. product recommendations → ML service on cold start). */
+    private const val TIMEOUT_SEC = 90L
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY

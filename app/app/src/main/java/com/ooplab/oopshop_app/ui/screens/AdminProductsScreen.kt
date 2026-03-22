@@ -1,27 +1,35 @@
 package com.ooplab.oopshop_app.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,7 +40,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ooplab.oopshop_app.data.api.BarcodeSuggestedProduct
 import com.ooplab.oopshop_app.data.dto.ProductDto
 import com.ooplab.oopshop_app.data.repository.Resource
 import com.ooplab.oopshop_app.ui.components.AdminProductCard
@@ -40,6 +50,32 @@ import com.ooplab.oopshop_app.ui.components.BarcodeScannerDialog
 import com.ooplab.oopshop_app.ui.components.LoadingView
 import com.ooplab.oopshop_app.ui.components.showToast
 import com.ooplab.oopshop_app.viewmodel.AdminViewModel
+
+private val searchFieldShape = RoundedCornerShape(16.dp)
+private val cardShape = RoundedCornerShape(16.dp)
+/** Builds description text from Open Food Facts fields returned by the backend. */
+private fun buildDescriptionFromOff(s: BarcodeSuggestedProduct): String {
+    val parts = mutableListOf<String>()
+    s.ingredients_text?.trim()?.takeIf { it.isNotEmpty() }?.let { parts.add(it) }
+    formatOffQuantity(s.quantity)?.let { parts.add("Pack quantity: $it") }
+    s.packaging?.trim()?.takeIf { it.isNotEmpty() }?.let { parts.add("Packaging: $it") }
+    s.labels?.filter { it.isNotBlank() }?.takeIf { it.isNotEmpty() }?.let { labels ->
+        parts.add("Labels: ${labels.joinToString(", ")}")
+    }
+    s.allergens?.filter { it.isNotBlank() }?.takeIf { it.isNotEmpty() }?.let { allergens ->
+        parts.add("Allergens: ${allergens.joinToString(", ")}")
+    }
+    return parts.joinToString("\n\n")
+}
+
+private fun formatOffQuantity(q: Any?): String? {
+    if (q == null) return null
+    val str = when (q) {
+        is String -> q.trim()
+        else -> q.toString().trim()
+    }
+    return str.takeIf { it.isNotEmpty() }
+}
 
 @Composable
 fun AdminProductsScreen(
@@ -79,28 +115,61 @@ fun AdminProductsScreen(
     }
 
     when (productsResource) {
-        is Resource.Loading -> LoadingView(Modifier.fillMaxSize())
+        is Resource.Loading -> Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surface),
+            contentAlignment = Alignment.Center
+        ) {
+            LoadingView(Modifier)
+        }
         is Resource.Success -> {
             val list = (productsResource as Resource.Success<List<ProductDto>>).data
             Column(
-                modifier = modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surface)
             ) {
+                Column(
+                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "Products",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Search, scan, or add catalog items",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    placeholder = { Text("Search products") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        .padding(horizontal = 20.dp),
+                    placeholder = { Text("Search by name or barcode") },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
                     trailingIcon = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = {
                                 scanTarget = ScanTarget.Search
                                 showBarcodeScanner = true
                             }) {
-                                Icon(Icons.Default.QrCodeScanner, contentDescription = "Scan barcode")
+                                Icon(
+                                    Icons.Default.QrCodeScanner,
+                                    contentDescription = "Scan barcode"
+                                )
                             }
                             if (searchQuery.isNotBlank()) {
                                 IconButton(onClick = { searchQuery = "" }) {
@@ -109,29 +178,33 @@ fun AdminProductsScreen(
                             }
                         }
                     },
-                    singleLine = true
+                    singleLine = true,
+                    shape = searchFieldShape
                 )
-                Button(
+                FilledTonalButton(
                     onClick = { showCreateDialog = true },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
+                        .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 8.dp),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null)
-                    Text(" Add product")
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text("Add product")
                 }
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     if (list.isEmpty()) {
                         item {
-                            Text(
-                                if (searchQuery.isBlank()) "No products" else "No matching products",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(16.dp)
+                            EmptyProductsPlaceholder(
+                                isSearch = searchQuery.isNotBlank()
                             )
                         }
                     } else {
@@ -145,14 +218,12 @@ fun AdminProductsScreen(
                 }
             }
         }
-        is Resource.Error -> {
-            Column(Modifier.padding(16.dp)) {
-                Text(
-                    (productsResource as Resource.Error).message,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
+        is Resource.Error -> Column(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(20.dp)
+        ) {
+            ProductsErrorBanner((productsResource as Resource.Error).message)
         }
     }
 
@@ -177,9 +248,10 @@ fun AdminProductsScreen(
                 showCreateDialog = false
                 createFormScannedBarcode = null
                 adminViewModel.clearCreateProductResult()
+                adminViewModel.clearBarcodeSuggestion()
             },
             onFetchByBarcode = { barcode -> adminViewModel.fetchProductFromBarcode(barcode) },
-            onCreateProduct = { name, price, brand, category, imageUrl, description, stock, barcode ->
+            onCreateProduct = { name, price, brand, category, imageUrl, description, stock, barcode, nutritionalInfo ->
                 adminViewModel.createProduct(
                     name = name,
                     price = price,
@@ -187,6 +259,7 @@ fun AdminProductsScreen(
                     category = category,
                     imageUrl = imageUrl,
                     description = description,
+                    nutritionalInfo = nutritionalInfo,
                     stockQuantity = stock,
                     barcode = barcode
                 )
@@ -197,6 +270,77 @@ fun AdminProductsScreen(
             },
             scannedBarcodeFromGlobalDialog = createFormScannedBarcode
         )
+    }
+}
+
+@Composable
+private fun EmptyProductsPlaceholder(isSearch: Boolean) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = cardShape,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Inventory2,
+                contentDescription = null,
+                modifier = Modifier.size(44.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
+            )
+            Text(
+                text = if (isSearch) "No matching products" else "No products yet",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = if (isSearch) {
+                    "Try another search or scan a barcode"
+                } else {
+                    "Add your first product to get started"
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProductsErrorBanner(message: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = cardShape,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.45f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Inventory2,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onErrorContainer
+            )
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+        }
     }
 }
 
@@ -217,7 +361,8 @@ private fun AddProductDialog(
         imageUrl: String?,
         description: String?,
         stockQuantity: Int,
-        barcode: String?
+        barcode: String?,
+        nutritionalInfo: Map<String, Any>?
     ) -> Unit,
     scannedBarcodeFromGlobalDialog: String?
 ) {
@@ -229,10 +374,13 @@ private fun AddProductDialog(
     var imageUrl by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var stockQuantity by remember { mutableStateOf("0") }
+    var nutritionalInfoForCreate by remember { mutableStateOf<Map<String, Any>?>(null) }
 
     LaunchedEffect(scannedBarcodeFromGlobalDialog) {
-        if (!scannedBarcodeFromGlobalDialog.isNullOrBlank()) {
-            barcode = scannedBarcodeFromGlobalDialog
+        val code = scannedBarcodeFromGlobalDialog
+        if (!code.isNullOrBlank()) {
+            barcode = code
+            onFetchByBarcode(code)
         }
     }
 
@@ -243,6 +391,8 @@ private fun AddProductDialog(
         category = suggestion.category ?: category
         imageUrl = suggestion.image_url ?: imageUrl
         barcode = suggestion.open_food_facts_barcode ?: barcode
+        description = buildDescriptionFromOff(suggestion)
+        nutritionalInfoForCreate = suggestion.nutritional_info
     }
 
     val isCreating = createProductResource is Resource.Loading
@@ -270,9 +420,26 @@ private fun AddProductDialog(
                     }
                 )
                 when (barcodeSuggestionResource) {
-                    is Resource.Loading -> Text("Fetching product details...", style = MaterialTheme.typography.bodySmall)
-                    is Resource.Error -> Text(barcodeSuggestionResource.message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                    else -> {}
+                    is Resource.Loading -> Text(
+                        "Fetching product details from Open Food Facts…",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    is Resource.Error -> Text(
+                        barcodeSuggestionResource.message,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    is Resource.Success -> {
+                        if (barcodeSuggestionResource.data.suggested != null) {
+                            Text(
+                                "Product details loaded — review and set price",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    null -> {}
                 }
                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name *") }, singleLine = true)
                 OutlinedTextField(value = price, onValueChange = { price = it }, label = { Text("Price *") }, singleLine = true)
@@ -294,7 +461,8 @@ private fun AddProductDialog(
                         imageUrl.trim().ifBlank { null },
                         description.trim().ifBlank { null },
                         stockQuantity.toIntOrNull() ?: 0,
-                        barcode.trim().ifBlank { null }
+                        barcode.trim().ifBlank { null },
+                        nutritionalInfoForCreate
                     )
                 },
                 enabled = canCreate && !isCreating

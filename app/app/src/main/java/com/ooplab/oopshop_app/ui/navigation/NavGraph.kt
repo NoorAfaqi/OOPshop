@@ -11,13 +11,12 @@ import com.ooplab.oopshop_app.ui.screens.AdminHostScreen
 import com.ooplab.oopshop_app.ui.screens.BillingScreen
 import com.ooplab.oopshop_app.ui.screens.ChangePasswordScreen
 import com.ooplab.oopshop_app.ui.screens.CurrentOrdersScreen
-import com.ooplab.oopshop_app.ui.screens.LoginScreen
+import com.ooplab.oopshop_app.ui.screens.AuthScreen
 import com.ooplab.oopshop_app.ui.screens.MainScreen
 import com.ooplab.oopshop_app.ui.screens.OrderDetailScreen
 import com.ooplab.oopshop_app.ui.screens.OrderHistoryScreen
 import com.ooplab.oopshop_app.ui.screens.ProductDetailScreen
 import com.ooplab.oopshop_app.ui.screens.ProfileSettingsScreen
-import com.ooplab.oopshop_app.ui.screens.RegisterScreen
 import com.ooplab.oopshop_app.viewmodel.AccountViewModel
 import com.ooplab.oopshop_app.viewmodel.AdminViewModel
 import com.ooplab.oopshop_app.viewmodel.AuthViewModel
@@ -112,20 +111,20 @@ fun OOPShopNavGraph(
                 productId = productId,
                 viewModel = productsViewModel,
                 cartViewModel = cartViewModel,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onRecommendedProductClick = { id ->
+                    navController.navigate(Routes.productDetail(id))
+                }
             )
         }
         composable(Routes.LOGIN) {
-            LoginScreen(
+            AuthScreen(
                 viewModel = authViewModel,
-                onLoginSuccess = { navController.navigate(Routes.MAIN) { popUpTo(Routes.LOGIN) { inclusive = true } } },
-                onNavigateToRegister = { navController.navigate(Routes.REGISTER) }
-            )
-        }
-        composable(Routes.REGISTER) {
-            RegisterScreen(
-                viewModel = authViewModel,
-                onRegisterSuccess = { navController.navigate(Routes.MAIN) { popUpTo(Routes.REGISTER) { inclusive = true } } },
+                onAuthSuccess = {
+                    navController.navigate(Routes.MAIN) {
+                        popUpTo(Routes.LOGIN) { inclusive = true }
+                    }
+                },
                 onBack = { navController.popBackStack() }
             )
         }

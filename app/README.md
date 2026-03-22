@@ -22,7 +22,7 @@ com.ooplab.oopshop_app/
 ├── viewmodel/        # ProductsViewModel, AuthViewModel
 ├── ui/
 │   ├── components/   # LoadingView, ErrorView, PrimaryButton, ProductCard
-│   ├── screens/      # ShopScreen, ProductDetailScreen, LoginScreen, RegisterScreen
+│   ├── screens/      # ShopScreen, ProductDetailScreen, AuthScreen, …
 │   ├── navigation/   # NavGraph, Routes
 │   └── theme/        # OOPShop_AppTheme, colors, typography
 └── MainActivity.kt   # Sets Compose content, ViewModels, NavGraph

@@ -4,6 +4,8 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.ooplab.oopshop_app.data.api.ApiResponse
 import com.ooplab.oopshop_app.data.dto.ProductDto
+import com.ooplab.oopshop_app.data.dto.ProductRecommendationItemDto
+import com.ooplab.oopshop_app.data.dto.ProductRecommendationsDataDto
 import com.ooplab.oopshop_app.data.network.RetrofitClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +28,10 @@ class ProductRepository {
 
     private val _productDetail = MutableLiveData<Resource<ProductDto>>()
     val productDetail: LiveData<Resource<ProductDto>> = _productDetail
+
+    private val _productRecommendations = MutableLiveData<Resource<List<ProductRecommendationItemDto>>>()
+    val productRecommendations: LiveData<Resource<List<ProductRecommendationItemDto>>> =
+        _productRecommendations
 
     fun loadProducts(
         query: String? = null,
@@ -67,6 +73,18 @@ class ProductRepository {
         }
     }
 
+    fun loadProductRecommendations(productId: Int) {
+        _productRecommendations.value = Resource.Loading
+        scope.launch {
+            try {
+                val response = withContext(Dispatchers.IO) { api.getProductRecommendations(productId) }
+                _productRecommendations.value = handleRecommendationsResponse(response)
+            } catch (e: Exception) {
+                _productRecommendations.value = Resource.Error(e.message ?: "Unknown error", e)
+            }
+        }
+    }
+
     private fun handleProductListResponse(response: Response<ApiResponse<List<ProductDto>>>): Resource<List<ProductDto>> {
         return when {
             response.isSuccessful -> {
@@ -87,6 +105,25 @@ class ProductRepository {
                 val body = response.body()
                 when {
                     body != null && body.isSuccess() && body.data != null -> Resource.Success(body.data)
+                    body != null -> Resource.Error(body.message ?: "Request failed")
+                    else -> Resource.Error("Empty response")
+                }
+            }
+            else -> Resource.Error("${response.code()}: ${response.message()}")
+        }
+    }
+
+    private fun handleRecommendationsResponse(
+        response: Response<ApiResponse<ProductRecommendationsDataDto>>
+    ): Resource<List<ProductRecommendationItemDto>> {
+        return when {
+            response.isSuccessful -> {
+                val body = response.body()
+                when {
+                    body != null && body.isSuccess() && body.data != null -> {
+                        val list = body.data!!.recommendations.filter { it.product != null }
+                        Resource.Success(list)
+                    }
                     body != null -> Resource.Error(body.message ?: "Request failed")
                     else -> Resource.Error("Empty response")
                 }

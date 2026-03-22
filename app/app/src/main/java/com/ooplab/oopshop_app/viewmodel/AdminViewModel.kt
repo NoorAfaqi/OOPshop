@@ -22,6 +22,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.LocalDate
 
 /**
  * ViewModel for admin panel: overview, reports, invoices, users, products, inventory, payments.
@@ -63,13 +64,21 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
     private val _userDetail = MutableLiveData<Resource<UserDto>>()
     val userDetail: LiveData<Resource<UserDto>> = _userDetail
 
+    /** Inclusive range: last 30 calendar days ending today (YYYY-MM-DD). */
+    private fun defaultReportDateRange(): Pair<String, String> {
+        val end = LocalDate.now()
+        val start = end.minusDays(29)
+        return start.toString() to end.toString()
+    }
+
     fun loadReport(from: String? = null, to: String? = null, forceRefresh: Boolean = false) {
         if (!forceRefresh && _report.value is Resource.Success) return
         _report.value = Resource.Loading
+        val (fromQ, toQ) = if (from != null && to != null) from to to else defaultReportDateRange()
         scope.launch {
             try {
                 val response = withContext(Dispatchers.IO) {
-                    RetrofitClient.reportsApi.getReport(from = from, to = to)
+                    RetrofitClient.reportsApi.getReport(from = fromQ, to = toQ)
                 }
                 when {
                     response.isSuccessful -> {
@@ -219,6 +228,10 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun clearBarcodeSuggestion() {
+        _barcodeSuggestion.value = null
+    }
+
     fun createProduct(
         name: String,
         price: Double,
@@ -226,6 +239,7 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
         imageUrl: String? = null,
         category: String? = null,
         description: String? = null,
+        nutritionalInfo: Map<String, Any>? = null,
         stockQuantity: Int = 0,
         barcode: String? = null
     ) {
@@ -241,6 +255,7 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
                             image_url = imageUrl?.takeIf { it.isNotBlank() },
                             category = category?.takeIf { it.isNotBlank() },
                             description = description?.takeIf { it.isNotBlank() },
+                            nutritional_info = nutritionalInfo,
                             stock_quantity = stockQuantity,
                             open_food_facts_barcode = barcode?.takeIf { it.isNotBlank() }
                         )
@@ -414,7 +429,8 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun runReport(): Resource<ReportDto> = withContext(Dispatchers.IO) {
         try {
-            val response = RetrofitClient.reportsApi.getReport(from = null, to = null)
+            val (from, to) = defaultReportDateRange()
+            val response = RetrofitClient.reportsApi.getReport(from = from, to = to)
             when {
                 response.isSuccessful -> {
                     val body = response.body()

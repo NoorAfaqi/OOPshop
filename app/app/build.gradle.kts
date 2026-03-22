@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    jacoco
 }
 
 android {
@@ -22,6 +23,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            enableUnitTestCoverage = true
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -80,10 +84,68 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     testImplementation(libs.junit)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.robolectric)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
+
+jacoco {
+    toolVersion = libs.versions.jacoco.get()
+}
+
+tasks.withType<org.gradle.api.tasks.testing.Test>().configureEach {
+    // Single fork avoids Gradle 9 + JDK 21 worker deserialization issues with JaCoCo-instrumented tests.
+    maxParallelForks = 1
+    configure<org.gradle.testing.jacoco.plugins.JacocoTaskExtension> {
+        isIncludeNoLocationClasses = false
+    }
+}
+
+private val jacocoClassExcludes = listOf(
+    "**/R.class",
+    "**/R\$*.class",
+    "**/BuildConfig.*",
+    "**/Manifest*.*",
+    "**/*\$*\$*.class",
+    "**/*\$inlined\$*.class",
+    "**/*\$Lambda\$*.class",
+    "**/*\$default.*",
+    // Layers typically covered by instrumented/integration tests or manual QA; JVM report focuses on models & pure logic.
+    "**/com/ooplab/oopshop_app/ui/screens/**",
+    "**/com/ooplab/oopshop_app/ui/theme/**",
+    "**/com/ooplab/oopshop_app/ui/components/**",
+    "**/com/ooplab/oopshop_app/viewmodel/**",
+    "**/com/ooplab/oopshop_app/data/repository/**",
+    "**/com/ooplab/oopshop_app/data/network/**",
+    "**/com/ooplab/oopshop_app/data/local/**",
+    "**/com/ooplab/oopshop_app/MainActivity*.class"
+)
+
+tasks.register<org.gradle.testing.jacoco.tasks.JacocoReport>("jacocoTestReport") {
+    dependsOn("testDebugUnitTest")
+    group = "verification"
+    description = "HTML/XML JaCoCo report for debug unit tests (open app/build/reports/jacoco/jacocoTestReport/html/index.html)"
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+
+    val kotlinClasses = layout.buildDirectory.dir("tmp/kotlin-classes/debug").get().asFile
+    classDirectories.setFrom(
+        fileTree(kotlinClasses) {
+            exclude(jacocoClassExcludes)
+        }
+    )
+    sourceDirectories.setFrom(files("$projectDir/src/main/java"))
+    executionData.setFrom(
+        fileTree(layout.buildDirectory.get().asFile) {
+            include("**/testDebugUnitTest.exec", "**/jacoco/testDebugUnitTest.exec")
+        }
+    )
 }
