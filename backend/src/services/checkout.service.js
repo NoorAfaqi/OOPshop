@@ -147,7 +147,9 @@ class CheckoutService {
       // Send order confirmation email (non-blocking)
       // Fetch user and items for email after transaction commits
       const [userRows] = await pool.query(
-        "SELECT id, email, first_name, last_name FROM users WHERE id = ?",
+        `SELECT id, email, first_name, last_name,
+                billing_street, billing_zip, billing_city, billing_country
+         FROM users WHERE id = ?`,
         [userId]
       );
       const user = userRows[0];
@@ -161,7 +163,15 @@ class CheckoutService {
           [invoiceId]
         );
         
-        emailService.sendOrderPlacedEmail(invoice, user, itemsRows).catch((err) => {
+        const invoiceForEmail = {
+          ...invoice,
+          billing_street: user.billing_street,
+          billing_zip: user.billing_zip,
+          billing_city: user.billing_city,
+          billing_country: user.billing_country,
+        };
+        
+        emailService.sendOrderPlacedEmail(invoiceForEmail, user, itemsRows).catch((err) => {
           logger.error('Failed to send order placed email', { invoiceId, error: err.message });
         });
       }
