@@ -15,10 +15,7 @@ const config = {
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 0,
-  // Production optimizations
-  acquireTimeout: 60000, // 60 seconds
-  timeout: 60000, // 60 seconds
-  reconnect: true,
+  connectTimeout: 60000,
   // Enable connection pooling optimizations
   multipleStatements: false, // Security: prevent SQL injection via multiple statements
   dateStrings: false, // Use Date objects instead of strings
