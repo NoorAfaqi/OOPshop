@@ -109,14 +109,30 @@ class AuthService {
         [email, password_hash, first_name, last_name, phone || null, role]
       );
       
+      const userId = result.insertId;
+
+      const token = jwt.sign(
+        {
+          id: userId,
+          email,
+          role,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRES_IN || "1d" }
+      );
+
       logger.info(`New user registered: ${email} (role: ${role})`);
-      
+
+      // Same shape as login — mobile/web clients expect token + user for auto sign-in
       return {
-        id: result.insertId,
-        email,
-        first_name,
-        last_name,
-        role,
+        token,
+        user: {
+          id: userId,
+          email,
+          first_name,
+          last_name,
+          role,
+        },
       };
     } catch (error) {
       logger.error("Registration error:", error);

@@ -37,7 +37,8 @@ data class UserDto(
 )
 
 data class AuthResponse(
-    val token: String,
+    /** Null if server returns a legacy register body without JWT (should not happen after API fix). */
+    val token: String? = null,
     val user: UserDto? = null,
     @SerializedName("manager") val manager: UserDto? = null
 ) {

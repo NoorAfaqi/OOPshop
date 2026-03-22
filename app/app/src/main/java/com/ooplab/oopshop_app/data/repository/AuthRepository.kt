@@ -69,11 +69,11 @@ class AuthRepository {
                 val response = withContext(Dispatchers.IO) {
                     api.login(LoginRequest(email, password))
                 }
-                val result = handleAuthResponse(response) { data ->
-                    RetrofitClient.setAuthToken(data.token)
+                val result = handleAuthResponse(response) { data, token ->
+                    RetrofitClient.setAuthToken(token)
                     val user = data.getUserOrManager()
                     if (user != null) _currentUser.value = Resource.Success(user)
-                    AuthResult(data.token, user)
+                    AuthResult(token, user)
                 }
                 _loginResult.value = result
             } catch (e: Exception) {
@@ -103,11 +103,11 @@ class AuthRepository {
                         )
                     )
                 }
-                val result = handleAuthResponse(response) { data ->
-                    RetrofitClient.setAuthToken(data.token)
+                val result = handleAuthResponse(response) { data, token ->
+                    RetrofitClient.setAuthToken(token)
                     val user = data.getUserOrManager()
                     if (user != null) _currentUser.value = Resource.Success(user)
-                    AuthResult(data.token, user)
+                    AuthResult(token, user)
                 }
                 _registerResult.value = result
             } catch (e: Exception) {
@@ -164,14 +164,24 @@ class AuthRepository {
 
     private fun handleAuthResponse(
         response: Response<ApiResponse<AuthResponse>>,
-        onSuccess: (AuthResponse) -> AuthResult
+        onSuccess: (AuthResponse, String) -> AuthResult
     ): Resource<AuthResult> {
         return when {
             response.isSuccessful -> {
                 val body = response.body()
                 when {
-                    body != null && body.isSuccess() && body.data != null ->
-                        Resource.Success(onSuccess(body.data))
+                    body != null && body.isSuccess() && body.data != null -> {
+                        val data = body.data!!
+                        val token = data.token?.trim()?.takeIf { it.isNotEmpty() }
+                        if (token == null) {
+                            Resource.Error(
+                                "Account may exist but the server did not return a login token. " +
+                                    "Sign in with your email and password, or deploy an updated API."
+                            )
+                        } else {
+                            Resource.Success(onSuccess(data, token))
+                        }
+                    }
                     body != null -> Resource.Error(body.message ?: "Request failed")
                     else -> Resource.Error("Empty response")
                 }
