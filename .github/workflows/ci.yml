@@ -24,11 +24,13 @@ name: CI
 # - Disable auto-deploy in Render
 # - Deploy manually only after CI passes
 
+# Only main/master: full matrix + Android check + deploy gate. Development uses
+# `.github/workflows/sanity-regression.yml` (Sanity on push, Regression on PR dev→main).
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [main, master]
 
 jobs:
   backend-tests:
