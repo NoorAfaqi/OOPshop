@@ -1,11 +1,12 @@
 # Lightweight checks for the development branch.
-# - Sanity: every push to `development` (quick feedback while iterating).
-# - Regression: PRs from `development` → `main` / `master` — intentionally minimal
+# - Sanity: every push to `development` (quick testing feedback while iterating - understand errors before deployment occurs).
+# - Regression: PRs from `development` → `main` / `master`
 #   (see job body): the authoritative full matrix is `.github/workflows/ci.yml`, which
 #   already runs on those PRs. This workflow avoids duplicating backend tests, frontend
 #   tests, Gradle check/JaCoCo, and recommendation pip installs.
 #
-
+# This workflow is used to test the development branch before merging it into main or master.
+# It is used to test the development branch before merging it into main or master.
 name: Sanity / Regression
 
 on:
