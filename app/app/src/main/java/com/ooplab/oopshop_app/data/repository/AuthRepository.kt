@@ -116,11 +116,16 @@ class AuthRepository {
         }
     }
 
+    @Volatile
+    private var loadCurrentUserInFlight = false
+
     fun loadCurrentUser() {
         if (TokenHolder.token == null) {
             _currentUser.value = Resource.Error("Not logged in")
             return
         }
+        if (loadCurrentUserInFlight) return
+        loadCurrentUserInFlight = true
         _currentUser.value = Resource.Loading
         scope.launch {
             try {
@@ -135,10 +140,17 @@ class AuthRepository {
                             else -> _currentUser.value = Resource.Error("Empty response")
                         }
                     }
+                    response.code() == 401 -> {
+                        // Token expired or invalid: clear session so user can log in again
+                        RetrofitClient.setAuthToken(null)
+                        _currentUser.value = Resource.Error("Session expired. Please log in again.")
+                    }
                     else -> _currentUser.value = Resource.Error("${response.code()}: ${response.message()}")
                 }
             } catch (e: Exception) {
                 _currentUser.value = Resource.Error(e.message ?: "Unknown error", e)
+            } finally {
+                loadCurrentUserInFlight = false
             }
         }
     }

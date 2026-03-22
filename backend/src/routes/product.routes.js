@@ -63,6 +63,13 @@ router.get(
 
 // Parameterized routes (must come after specific routes)
 router.get(
+  "/:id/recommendations",
+  getProductValidator,
+  validate,
+  productController.getRecommendedProducts
+);
+
+router.get(
   "/:id",
   getProductValidator,
   validate,

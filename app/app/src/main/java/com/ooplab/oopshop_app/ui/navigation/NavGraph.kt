@@ -7,19 +7,16 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.ooplab.oopshop_app.ui.screens.AdminPanelScreen
+import com.ooplab.oopshop_app.ui.screens.AdminHostScreen
 import com.ooplab.oopshop_app.ui.screens.BillingScreen
 import com.ooplab.oopshop_app.ui.screens.ChangePasswordScreen
-import com.ooplab.oopshop_app.ui.screens.CartScreen
 import com.ooplab.oopshop_app.ui.screens.CurrentOrdersScreen
-import com.ooplab.oopshop_app.ui.screens.LoginScreen
+import com.ooplab.oopshop_app.ui.screens.AuthScreen
 import com.ooplab.oopshop_app.ui.screens.MainScreen
 import com.ooplab.oopshop_app.ui.screens.OrderDetailScreen
 import com.ooplab.oopshop_app.ui.screens.OrderHistoryScreen
 import com.ooplab.oopshop_app.ui.screens.ProductDetailScreen
 import com.ooplab.oopshop_app.ui.screens.ProfileSettingsScreen
-import com.ooplab.oopshop_app.ui.screens.RegisterScreen
-import com.ooplab.oopshop_app.ui.screens.ShopScreen
 import com.ooplab.oopshop_app.viewmodel.AccountViewModel
 import com.ooplab.oopshop_app.viewmodel.AdminViewModel
 import com.ooplab.oopshop_app.viewmodel.AuthViewModel
@@ -28,7 +25,6 @@ import com.ooplab.oopshop_app.viewmodel.ProductsViewModel
 
 object Routes {
     const val MAIN = "main"
-    const val SHOP = "shop"
     const val PRODUCT_DETAIL = "product/{productId}"
     const val LOGIN = "login"
     const val REGISTER = "register"
@@ -39,9 +35,39 @@ object Routes {
     const val PROFILE_SETTINGS = "profile_settings"
     const val CHANGE_PASSWORD = "change_password"
     const val ADMIN_PANEL = "admin_panel"
+    const val ADMIN_PRODUCTS = "admin_products"
+    const val ADMIN_PRODUCT_DETAIL = "admin_product/{productId}"
+    const val ADMIN_INVENTORY = "admin_inventory"
+    const val ADMIN_USERS = "admin_users"
+    const val ADMIN_USER_DETAIL = "admin_user/{userId}"
+    const val ADMIN_INVOICES = "admin_invoices"
+    const val ADMIN_INVOICE_DETAIL = "admin_invoice/{invoiceId}"
+    const val ADMIN_REPORTS = "admin_reports"
+    const val ADMIN_PAYMENTS = "admin_payments"
 
     fun productDetail(productId: Int) = "product/$productId"
     fun orderDetail(orderId: Int) = "order/$orderId"
+    fun adminProductDetail(productId: Int) = "admin_product/$productId"
+    fun adminUserDetail(userId: Int) = "admin_user/$userId"
+    fun adminInvoiceDetail(invoiceId: Int) = "admin_invoice/$invoiceId"
+}
+
+/** Inner routes for admin drawer (nested NavHost inside AdminHostScreen). */
+object AdminRoutes {
+    const val DASHBOARD = "admin_dashboard"
+    const val PRODUCTS = "admin_products"
+    const val PRODUCT_DETAIL = "admin_product/{productId}"
+    const val INVENTORY = "admin_inventory"
+    const val USERS = "admin_users"
+    const val USER_DETAIL = "admin_user/{userId}"
+    const val INVOICES = "admin_invoices"
+    const val INVOICE_DETAIL = "admin_invoice/{invoiceId}"
+    const val REPORTS = "admin_reports"
+    const val PAYMENTS = "admin_payments"
+
+    fun productDetail(productId: Int) = "admin_product/$productId"
+    fun userDetail(userId: Int) = "admin_user/$userId"
+    fun invoiceDetail(invoiceId: Int) = "admin_invoice/$invoiceId"
 }
 
 @Composable
@@ -85,20 +111,20 @@ fun OOPShopNavGraph(
                 productId = productId,
                 viewModel = productsViewModel,
                 cartViewModel = cartViewModel,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onRecommendedProductClick = { id ->
+                    navController.navigate(Routes.productDetail(id))
+                }
             )
         }
         composable(Routes.LOGIN) {
-            LoginScreen(
+            AuthScreen(
                 viewModel = authViewModel,
-                onLoginSuccess = { navController.navigate(Routes.MAIN) { popUpTo(Routes.LOGIN) { inclusive = true } } },
-                onNavigateToRegister = { navController.navigate(Routes.REGISTER) }
-            )
-        }
-        composable(Routes.REGISTER) {
-            RegisterScreen(
-                viewModel = authViewModel,
-                onRegisterSuccess = { navController.navigate(Routes.MAIN) { popUpTo(Routes.REGISTER) { inclusive = true } } },
+                onAuthSuccess = {
+                    navController.navigate(Routes.MAIN) {
+                        popUpTo(Routes.LOGIN) { inclusive = true }
+                    }
+                },
                 onBack = { navController.popBackStack() }
             )
         }
@@ -149,9 +175,10 @@ fun OOPShopNavGraph(
             )
         }
         composable(Routes.ADMIN_PANEL) {
-            AdminPanelScreen(
+            AdminHostScreen(
                 adminViewModel = adminViewModel,
-                onBack = { navController.popBackStack() }
+                productsViewModel = productsViewModel,
+                onBackToMain = { navController.popBackStack() }
             )
         }
     }

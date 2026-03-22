@@ -3,13 +3,16 @@ package com.ooplab.oopshop_app.data.api
 import com.google.gson.annotations.SerializedName
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
 
 /**
- * PayPal endpoints: create-order, capture.
- * Backend: POST /payments/paypal/create-order, POST /payments/paypal/capture
+ * Payments API. GET /payments (admin list), PayPal create-order, capture.
  */
 interface PaymentApi {
+
+    @GET("payments")
+    suspend fun getPayments(): Response<ApiResponse<List<PaymentListItemDto>>>
 
     @POST("payments/paypal/create-order")
     suspend fun createPayPalOrder(@Body body: CreateOrderRequest): Response<ApiResponse<PayPalOrderResponse>>
@@ -17,6 +20,21 @@ interface PaymentApi {
     @POST("payments/paypal/capture")
     suspend fun capturePayPalPayment(@Body body: CaptureRequest): Response<ApiResponse<CaptureResponse>>
 }
+
+/** Payment row from GET /payments (p.*, first_name, last_name, email, total_amount) */
+data class PaymentListItemDto(
+    val id: Int? = null,
+    @SerializedName("invoice_id") val invoiceId: Int? = null,
+    @SerializedName("user_id") val userId: Int? = null,
+    val amount: Double? = null,
+    val method: String? = null,
+    val status: String? = null,
+    @SerializedName("first_name") val firstName: String? = null,
+    @SerializedName("last_name") val lastName: String? = null,
+    val email: String? = null,
+    @SerializedName("total_amount") val totalAmount: Double? = null,
+    @SerializedName("created_at") val createdAt: String? = null
+)
 
 data class CreateOrderRequest(
     @SerializedName("invoice_id") val invoiceId: Int,

@@ -9,9 +9,10 @@ const app = require("./app");
 const logger = require("./config/logger");
 const pool = require("./config/database");
 
-// Default 3001 for Android app / frontend. If .env has PORT=5000, use 3001 instead (macOS AirPlay uses 5000).
+// Default 3001 for local dev. In production (e.g. Render), always use process.env.PORT so the platform can route traffic.
 let PORT = parseInt(process.env.PORT, 10) || 3001;
-if (PORT === 5000) {
+const isProduction = process.env.NODE_ENV === "production";
+if (!isProduction && PORT === 5000) {
   PORT = 3001;
   logger.info("Port 5000 is often in use on macOS (AirPlay). Using 3001 instead.");
 }
