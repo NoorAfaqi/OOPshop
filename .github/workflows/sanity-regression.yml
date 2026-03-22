@@ -2,8 +2,6 @@
 # - Sanity: every push to `development`
 # - Regression: pull requests from `development` → `main` / `master` (merge readiness)
 #
-# Full CI (`ci.yml`) runs only for `main` / `master` so you do not get duplicate
-# full matrix runs while working on `development`.
 
 name: Sanity / Regression
 
