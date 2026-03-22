@@ -93,15 +93,18 @@ describe('Auth Controller', () => {
 
   describe('POST /auth/register', () => {
     it('should register a new user successfully', async () => {
-      const mockUser = {
-        id: 1,
-        email: 'newuser@example.com',
-        role: 'customer',
-        first_name: 'New',
-        last_name: 'User'
+      const mockPayload = {
+        token: 'mock-jwt-after-register',
+        user: {
+          id: 1,
+          email: 'newuser@example.com',
+          role: 'customer',
+          first_name: 'New',
+          last_name: 'User'
+        }
       };
 
-      sinon.stub(authService, 'register').resolves(mockUser);
+      sinon.stub(authService, 'register').resolves(mockPayload);
 
       const response = await request(app)
         .post('/auth/register')
@@ -115,7 +118,9 @@ describe('Auth Controller', () => {
         .expect(201);
 
       expect(response.body.status).to.equal('success');
-      expect(response.body.data).to.deep.equal(mockUser);
+      expect(response.body.data).to.deep.equal(mockPayload);
+      expect(response.body.data.token).to.be.a('string');
+      expect(response.body.data.user.email).to.equal('newuser@example.com');
     });
 
     it('should return 400 for invalid email format', async () => {

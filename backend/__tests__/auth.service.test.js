@@ -102,16 +102,22 @@ describe('AuthService', () => {
 
       const hashedPassword = 'hashed_password';
       bcryptHashStub.resolves(hashedPassword);
+      jwtSignStub.returns('mock-register-jwt');
       poolQueryStub
         .onFirstCall().resolves([[]]) // Check if user exists
         .onSecondCall().resolves([{ insertId: 1 }]); // Insert user
 
       const result = await authService.register(userData);
 
-      expect(result.email).to.equal(userData.email);
-      expect(result.id).to.equal(1);
+      expect(result.token).to.equal('mock-register-jwt');
+      expect(result.user.email).to.equal(userData.email);
+      expect(result.user.id).to.equal(1);
+      expect(result.user.first_name).to.equal(userData.first_name);
+      expect(result.user.last_name).to.equal(userData.last_name);
+      expect(result.user.role).to.equal(userData.role);
       expect(bcrypt.hash).to.have.been.calledWith(userData.password, 10);
       expect(poolQueryStub).to.have.been.calledTwice;
+      expect(jwt.sign).to.have.been.called;
     });
 
     it('should throw error if user already exists', async () => {
